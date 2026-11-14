@@ -35,6 +35,8 @@ export const employeeSchema = z
     maxInRow: z.number().int().min(1).optional(),
     /** Allows exactly one day+night (or night+day) pair back to back (ADR-86a9b67). */
     allowMixedPair: z.boolean().default(false),
+    /** The other member of this employee's fixed pair (kept mutual, ADR-a1cb97d). */
+    partnerId: z.string().min(1).optional(),
   })
   .refine((e) => !e.firstShift || !e.lastShift || compareShifts(e.firstShift, e.lastShift) <= 0, {
     message: 'firstShift must not be after lastShift',
@@ -44,6 +46,29 @@ export const assignmentSchema = z.object({
   employeeId: z.string().min(1),
   /** Manual assignments are locked: the generator never changes them (ADR-fec8e13). */
   source: z.enum(['manual', 'auto']),
+});
+
+/** The employees on one shift (one entry per seat). Older files stored a single assignment: it migrates. */
+export const shiftAssignmentsSchema = z.preprocess(
+  (value) => (Array.isArray(value) ? value : [value]),
+  z.array(assignmentSchema).max(8).refine((list) => new Set(list.map((a) => a.employeeId)).size === list.length, {
+    message: 'an employee cannot take two seats of one shift',
+  }),
+);
+
+/** Start of block 0 of the long/short rotation: a Monday (ADR-a1cb97d). */
+const mondaySchema = z
+  .string()
+  .regex(isoDatePattern)
+  .refine((d) => {
+    const [y, m, day] = d.split('-').map(Number) as [number, number, number];
+    return new Date(y, m - 1, day).getDay() === 1;
+  }, 'anchor must be a Monday');
+
+export const patternSettingsSchema = z.object({
+  anchor: mondaySchema.default('2026-11-02'),
+  /** Weight of the pattern preference in the score. */
+  weight: z.number().positive().default(4),
 });
 
 export const companySchema = z.object({
@@ -61,6 +86,9 @@ export const companySchema = z.object({
   fairnessWeight: z.number().positive().default(2),
   /** Shifts above expected after which an employee is skipped while others remain (ADR-aaa3ccd). */
   fairnessCap: z.number().min(0).default(2),
+  /** Employees per shift (ADR-a1cb97d). */
+  seatsPerShift: z.number().int().min(1).max(4).default(2),
+  pattern: patternSettingsSchema.default(() => patternSettingsSchema.parse({})),
 });
 
 export const forbiddenShiftSchema = z.object({
@@ -72,7 +100,7 @@ export const forbiddenShiftSchema = z.object({
 export const dataSchema = z.object({
   employees: z.array(employeeSchema).default([]),
   /** Assignments by shift key ("YYYY-MM-DD:day" or ":night"). */
-  assignments: z.record(z.string().regex(shiftKeyPattern), assignmentSchema).default({}),
+  assignments: z.record(z.string().regex(shiftKeyPattern), shiftAssignmentsSchema).default({}),
   company: companySchema.default(() => companySchema.parse({})),
   /** Date-specific rule: an employee who must not work a given shift. */
   forbiddenShifts: z.array(forbiddenShiftSchema).default([]),

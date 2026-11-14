@@ -23,17 +23,20 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
   const t = useT();
   const locale = useLocale();
   const key = shiftKey(shift);
-  const current = data.assignments[key];
+  const current = data.assignments[key] ?? [];
+  const seats = data.company.seatsPerShift;
   const employees = useMemo(() => [...data.employees].sort(compareEmployees), [data.employees]);
 
-  const [selected, setSelected] = useState(current?.employeeId ?? '');
+  // One selection per seat; '' = nobody.
+  const [selected, setSelected] = useState<string[]>(() => Array.from({ length: seats }, (_, i) => current[i]?.employeeId ?? ''));
   const [forbidden, setForbidden] = useState<string[]>(
     data.forbiddenShifts.filter((f) => shiftKey(f.shift) === key).map((f) => f.employeeId),
   );
   const [toForbid, setToForbid] = useState('');
   const [error, setError] = useState(false);
 
-  const warnings = selected ? brokenRules({ ...data, forbiddenShifts: draftForbidden() }, shift, selected) : [];
+  const chosen = selected.filter(Boolean);
+  const warningsFor = (id: string) => (id ? brokenRules({ ...data, forbiddenShifts: draftForbidden() }, shift, id) : []);
   const nameOf = (id: string) => {
     const e = data.employees.find((x) => x.id === id);
     return e ? `${e.firstName} ${e.lastName}` : id;
@@ -48,9 +51,14 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
     return [...others, ...kept, ...added];
   }
 
-  async function persist(assignmentId: string) {
+  /** Locks the chosen employees on this shift (every filled seat becomes manual). */
+  async function persist(ids: string[], keepAuto = false) {
     const assignments = { ...data.assignments };
-    if (assignmentId) assignments[key] = { employeeId: assignmentId, source: 'manual' };
+    const entries = ids.filter(Boolean).map((employeeId) => ({ employeeId, source: 'manual' as const }));
+    // Clearing manual seats keeps the automatic ones.
+    const kept = keepAuto ? current.filter((a) => a.source === 'auto') : [];
+    const list = keepAuto ? kept : entries;
+    if (list.length > 0) assignments[key] = list;
     else delete assignments[key];
     try {
       await onSave({ ...data, assignments, forbiddenShifts: draftForbidden() });
@@ -60,7 +68,6 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
   }
 
   const partLabel = shift.part === 'day' ? t.calendar.day : t.calendar.night;
-  const available = employees.filter((e) => !forbidden.includes(e.id) || e.id === selected);
 
   return (
     <Modal title={`${formatDate(shift.date, locale)} · ${partLabel}`} onClose={onClose}>
@@ -71,25 +78,36 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           void persist(selected);
         }}
       >
-        <label className="field">
-          <span>{t.calendar.assignEmployee}</span>
-          <select value={selected} onChange={(e) => setSelected(e.target.value)} autoFocus>
-            <option value="">{t.calendar.noEmployee}</option>
-            {available.map((e) => (
-              <option key={e.id} value={e.id}>
-                {`${e.firstName} ${e.lastName}`}
-              </option>
-            ))}
-          </select>
-        </label>
-
+        {selected.map((value, seat) => {
+          const warnings = warningsFor(value);
+          return (
+            <div key={seat} className="seat-field">
+              <label className="field">
+                <span>{`${t.calendar.assignEmployee} ${seat + 1}`}</span>
+                <select
+                  value={value}
+                  autoFocus={seat === 0}
+                  onChange={(e) => setSelected((list) => list.map((v, i) => (i === seat ? e.target.value : v)))}
+                >
+                  <option value="">{t.calendar.noEmployee}</option>
+                  {employees
+                    .filter((e) => !forbidden.includes(e.id) && (!chosen.includes(e.id) || e.id === value))
+                    .map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {`${e.firstName} ${e.lastName}`}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {warnings.length > 0 && (
+                <p role="status" className="warning">
+                  {`${t.calendar.warning}: ${warnings.map((w) => t.reasons[w]).join(', ')}`}
+                </p>
+              )}
+            </div>
+          );
+        })}
         <p className="hint">{t.calendar.lockHint}</p>
-
-        {warnings.length > 0 && (
-          <p role="status" className="warning">
-            {`${t.calendar.warning}: ${warnings.map((w) => t.reasons[w]).join(', ')}`}
-          </p>
-        )}
 
         <fieldset className="vacations">
           <legend>{t.calendar.forbiddenTitle}</legend>
@@ -105,7 +123,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
             <select aria-label={t.calendar.forbiddenTitle} value={toForbid} onChange={(e) => setToForbid(e.target.value)}>
               <option value="">{t.calendar.selectEmployee}</option>
               {employees
-                .filter((e) => !forbidden.includes(e.id) && e.id !== selected)
+                .filter((e) => !forbidden.includes(e.id) && !chosen.includes(e.id))
                 .map((e) => (
                   <option key={e.id} value={e.id}>
                     {`${e.firstName} ${e.lastName}`}
@@ -132,8 +150,8 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           </p>
         )}
         <div className="form__actions">
-          {current?.source === 'manual' && (
-            <button type="button" className="button button--danger" onClick={() => void persist('')}>
+          {current.some((a) => a.source === 'manual') && (
+            <button type="button" className="button button--danger" onClick={() => void persist([], true)}>
               {t.calendar.clearManual}
             </button>
           )}
@@ -141,7 +159,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
             {t.common.cancel}
           </button>
           <button type="submit" className="button button--primary">
-            {selected ? t.calendar.lockAction : t.common.save}
+            {chosen.length > 0 ? t.calendar.lockAction : t.common.save}
           </button>
         </div>
       </form>

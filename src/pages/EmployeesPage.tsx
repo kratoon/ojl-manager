@@ -34,6 +34,10 @@ export function EmployeesPage() {
   }
 
   const { data } = state;
+  const partnerName = (employee: Employee) => {
+    const partner = data.employees.find((e) => e.id === employee.partnerId);
+    return partner ? `${partner.firstName} ${partner.lastName}` : '';
+  };
   const create = async (employee: Employee) => {
     await save({ ...data, employees: [...data.employees, employee] });
     setCreating(false);
@@ -41,9 +45,16 @@ export function EmployeesPage() {
   const remove = async (employee: Employee) => {
     if (!window.confirm(t.employees.deleteConfirm)) return;
     // Drop everything that refers to the removed employee.
-    const assignments = Object.fromEntries(Object.entries(data.assignments).filter(([, a]) => a.employeeId !== employee.id));
+    const assignments = Object.fromEntries(
+      Object.entries(data.assignments)
+        .map(([key, list]) => [key, list.filter((a) => a.employeeId !== employee.id)] as const)
+        .filter(([, list]) => list.length > 0),
+    );
     const forbiddenShifts = data.forbiddenShifts.filter((f) => f.employeeId !== employee.id);
-    await save({ ...data, employees: data.employees.filter((e) => e.id !== employee.id), assignments, forbiddenShifts });
+    const employees = data.employees
+      .filter((e) => e.id !== employee.id)
+      .map((e) => (e.partnerId === employee.id ? { ...e, partnerId: undefined } : e));
+    await save({ ...data, employees, assignments, forbiddenShifts });
   };
 
   return (
@@ -65,6 +76,7 @@ export function EmployeesPage() {
               <tr>
                 <th scope="col">{t.employees.firstName}</th>
                 <th scope="col">{t.employees.lastName}</th>
+                <th scope="col">{t.employees.partner}</th>
                 {canEdit && (
                   <th scope="col" className="table__actions">
                     <span className="sr-only">{t.common.actions}</span>
@@ -77,6 +89,7 @@ export function EmployeesPage() {
                 <tr key={employee.id}>
                   <td>{employee.firstName}</td>
                   <td>{employee.lastName}</td>
+                  <td>{partnerName(employee)}</td>
                   {canEdit && (
                     <td className="table__actions">
                       <RowActionsMenu

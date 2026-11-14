@@ -90,7 +90,7 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
               <ul>
                 {unfilled.slice(0, 50).map((u) => (
                   <li key={`${u.shift.date}:${u.shift.part}`}>
-                    {`${dateOf(u.shift.date)} ${u.shift.part === 'day' ? t.calendar.day : t.calendar.night}: ${u.reasons.map((r) => t.reasons[r]).join(', ')}`}
+                    {`${dateOf(u.shift.date)} ${u.shift.part === 'day' ? t.calendar.day : t.calendar.night}: ${u.reasons.map((r) => t.reasons[r]).join(', ')} (${u.missing})`}
                   </li>
                 ))}
               </ul>

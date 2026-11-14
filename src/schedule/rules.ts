@@ -1,4 +1,5 @@
 import type { Data, Employee } from '../data/schema';
+import { onPattern, type PatternModel } from './pattern';
 import { compareShifts, nextShift, previousShift, shiftKey, type Shift } from './shift';
 
 // Rule engine (ADR-86a9b67, ADR-aaa3ccd). A rule returns a verdict or null (no opinion).
@@ -17,6 +18,7 @@ export type ReasonCode =
   | 'max-in-row'
   | 'day-night-mix'
   | 'pair-limit'
+  | 'pattern'
   | 'fairness';
 
 export interface Verdict {
@@ -29,8 +31,10 @@ export interface RuleContext {
   data: Data;
   employee: Employee;
   shift: Shift;
-  /** Who works a shift according to the schedule so far, or undefined. */
-  assignedTo(shift: Shift): string | undefined;
+  /** Ids of the employees working a shift according to the schedule so far. */
+  assignedTo(shift: Shift): readonly string[];
+  /** Long/short week rotation, when the generator has one (ADR-a1cb97d). */
+  pattern?: PatternModel;
   /** Expected shifts by now minus shifts worked so far (ADR-aaa3ccd). Positive = behind. */
   gap: number;
 }
@@ -104,7 +108,7 @@ const maxInRowRule: Rule = {
   id: 'max-in-row',
   evaluate: ({ data, employee, shift, assignedTo }) => {
     const limit = employee.maxInRow ?? data.company.maxInRow;
-    const same = (days: number) => assignedTo({ date: addDays(shift.date, days), part: shift.part }) === employee.id;
+    const same = (days: number) => assignedTo({ date: addDays(shift.date, days), part: shift.part }).includes(employee.id);
     let run = 1;
     for (let d = 1; same(-d); d++) run++;
     for (let d = 1; same(d); d++) run++;
@@ -120,7 +124,7 @@ const maxInRowRule: Rule = {
 const noMixingRule: Rule = {
   id: 'no-mixing',
   evaluate: ({ employee, shift, assignedTo }) => {
-    const mine = (s: Shift) => assignedTo(s) === employee.id;
+    const mine = (s: Shift) => assignedTo(s).includes(employee.id);
     let chain = 1;
     for (let s = previousShift(shift); mine(s); s = previousShift(s)) chain++;
     for (let s = nextShift(shift); mine(s); s = nextShift(s)) chain++;
@@ -137,6 +141,20 @@ const fairnessRule: Rule = {
   evaluate: ({ gap }) => ({ score: Math.min(10, Math.max(1, NEUTRAL_SCORE + gap)), reason: 'fairness' }),
 };
 
+/**
+ * Long/short week rotation as a soft preference: 10 when the employee's pair is on pattern for this
+ * shift, 1 otherwise. No opinion without a pattern or for an employee without a position.
+ */
+const patternRule: Rule = {
+  id: 'pattern',
+  weight: (data) => data.company.pattern.weight,
+  evaluate: ({ employee, shift, pattern }) => {
+    if (!pattern) return null;
+    const on = onPattern(pattern, employee.id, shift);
+    return on === null ? null : { score: on ? 10 : 1, reason: 'pattern' };
+  },
+};
+
 /** The registry. Kept sorted by id so combining is always in the same order (determinism). */
 export const defaultRules: Rule[] = [
   closedRule,
@@ -144,6 +162,7 @@ export const defaultRules: Rule[] = [
   forbiddenRule,
   maxInRowRule,
   noMixingRule,
+  patternRule,
   vacationRule,
   windowRule,
 ].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -183,9 +202,9 @@ export function brokenRules(data: Data, shift: Shift, employeeId: string, rules:
   const employee = data.employees.find((e) => e.id === employeeId);
   if (!employee) return [];
   const own = shiftKey(shift);
-  const assignedTo = (s: Shift) => {
+  const assignedTo = (s: Shift): readonly string[] => {
     const key = shiftKey(s);
-    return key === own ? undefined : data.assignments[key]?.employeeId;
+    return key === own ? [] : (data.assignments[key]?.map((a) => a.employeeId) ?? []);
   };
   return evaluate(rules, { data, employee, shift, assignedTo, gap: 0 }).blockedBy;
 }

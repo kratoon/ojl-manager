@@ -8,6 +8,8 @@ interface EmployeeFormProps {
   employee?: Employee;
   /** Show scheduling fields (first/last shift, vacations, overrides). Names only otherwise. */
   extended?: boolean;
+  /** Everybody else, to pick a pair from (extended form only). */
+  others?: Employee[];
   onSubmit(employee: Employee): Promise<void>;
   onCancel(): void;
 }
@@ -21,12 +23,13 @@ interface VacationDraft {
 }
 
 /** Shared by the create modal and the edit page. */
-export function EmployeeForm({ employee, extended = false, onSubmit, onCancel }: EmployeeFormProps) {
+export function EmployeeForm({ employee, extended = false, others = [], onSubmit, onCancel }: EmployeeFormProps) {
   const t = useT();
   const [firstName, setFirstName] = useState(employee?.firstName ?? '');
   const [lastName, setLastName] = useState(employee?.lastName ?? '');
   const [firstShift, setFirstShift] = useState<Shift | undefined>(employee?.firstShift);
   const [lastShift, setLastShift] = useState<Shift | undefined>(employee?.lastShift);
+  const [partnerId, setPartnerId] = useState(employee?.partnerId ?? '');
   const [maxInRow, setMaxInRow] = useState(employee?.maxInRow?.toString() ?? '');
   const [allowMixedPair, setAllowMixedPair] = useState(employee?.allowMixedPair ?? false);
   const [vacations, setVacations] = useState<VacationDraft[]>(employee?.vacations ?? []);
@@ -44,6 +47,7 @@ export function EmployeeForm({ employee, extended = false, onSubmit, onCancel }:
       firstName,
       lastName,
       ...(extended && {
+        partnerId: partnerId || undefined,
         firstShift,
         lastShift,
         maxInRow: maxInRow === '' ? undefined : Number(maxInRow),
@@ -73,6 +77,18 @@ export function EmployeeForm({ employee, extended = false, onSubmit, onCancel }:
 
       {extended && (
         <>
+          <label className="field">
+            <span>{t.employees.partner}</span>
+            <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
+              <option value="">{t.employees.noPartner}</option>
+              {others.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {`${o.firstName} ${o.lastName}`}
+                </option>
+              ))}
+            </select>
+            <span className="hint">{t.employees.partnerHint}</span>
+          </label>
           <ShiftField label={t.employees.firstShift} value={firstShift} onChange={setFirstShift} />
           <ShiftField label={t.employees.lastShift} value={lastShift} onChange={setLastShift} />
 

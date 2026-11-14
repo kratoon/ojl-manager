@@ -5,12 +5,13 @@ import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar'
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
-import { ShiftTile } from '../components/calendar/ShiftTile';
+import { ShiftTile, type TileEntry } from '../components/calendar/ShiftTile';
 import { useData } from '../data/DataProvider';
 import type { Assignment, Data, Employee } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
 import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
+import { pairingProblems } from '../schedule/pattern';
 import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
 import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
 
@@ -86,17 +87,21 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const employeesById = useMemo(() => new Map(data.employees.map((e) => [e.id, e])), [data.employees]);
 
   // While previewing, show the proposed schedule instead of the saved one.
-  const assignments: Record<string, Assignment> = preview ? preview.result.assignments : data.assignments;
+  const assignments: Record<string, Assignment[]> = preview ? preview.result.assignments : data.assignments;
+  const seats = data.company.seatsPerShift;
+  const pairing = useMemo(() => pairingProblems(data.employees), [data.employees]);
 
   // Rule warnings for manual assignments (allowed, but flagged).
   const warnings = useMemo(() => {
     const view: Data = { ...data, assignments };
-    const result = new Map<string, ReasonCode[]>();
-    for (const [key, a] of Object.entries(assignments)) {
-      if (a.source !== 'manual') continue;
+    const result = new Map<string, ReasonCode[]>(); // key: "<shift key>|<employee id>"
+    for (const [key, list] of Object.entries(assignments)) {
       const [date, part] = key.split(':') as [string, DayPart];
-      const broken = brokenRules(view, { date, part }, a.employeeId);
-      if (broken.length > 0) result.set(key, broken);
+      for (const a of list) {
+        if (a.source !== 'manual') continue;
+        const broken = brokenRules(view, { date, part }, a.employeeId);
+        if (broken.length > 0) result.set(`${key}|${a.employeeId}`, broken);
+      }
     }
     return result;
   }, [data, assignments]);
@@ -104,13 +109,15 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   // Day and night shifts per employee for each month (from the saved or the previewed schedule).
   const monthlyCounts = useMemo(() => {
     const result = new Map<string, Record<string, ShiftCounts>>();
-    for (const [key, a] of Object.entries(assignments)) {
+    for (const [key, list] of Object.entries(assignments)) {
       const month = key.slice(0, 7);
       const counts = result.get(month) ?? {};
-      const entry = counts[a.employeeId] ?? { day: 0, night: 0 };
-      if (key.endsWith(':night')) entry.night++;
-      else entry.day++;
-      counts[a.employeeId] = entry;
+      for (const a of list) {
+        const entry = counts[a.employeeId] ?? { day: 0, night: 0 };
+        if (key.endsWith(':night')) entry.night++;
+        else entry.day++;
+        counts[a.employeeId] = entry;
+      }
       result.set(month, counts);
     }
     return result;
@@ -130,11 +137,12 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     // Never regenerate before tomorrow: today and the past are only changed by hand.
     if (compareShifts(startAt, tomorrowDay(today)) < 0) return;
     const result = generate({ data, range, startAt });
-    const before: Record<string, Assignment> = data.assignments;
-    const after: Record<string, Assignment> = result.assignments;
+    const before: Record<string, Assignment[]> = data.assignments;
+    const after: Record<string, Assignment[]> = result.assignments;
+    const people = (list: Assignment[] | undefined) => (list ?? []).map((a) => a.employeeId).sort().join(',');
     const changed = new Set<string>();
     for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
-      if (before[key]?.employeeId !== after[key]?.employeeId) changed.add(key);
+      if (people(before[key]) !== people(after[key])) changed.add(key);
     }
     setPreview({ result, changed });
     setRegenerating(false);
@@ -196,20 +204,23 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
                         {(['day', 'night'] as const).map((part) => {
                           const shift: Shift = { date, part };
                           const key = shiftKey(shift);
-                          const assignment = assignments[key];
+                          const entries: TileEntry[] = (assignments[key] ?? []).map((assignment) => ({
+                            assignment,
+                            employee: employeesById.get(assignment.employeeId),
+                            warnings: cell.outside ? [] : (warnings.get(`${key}|${assignment.employeeId}`) ?? []),
+                          }));
                           return (
                             <ShiftTile
                               key={part}
                               part={part}
-                              assignment={assignment}
-                              employee={assignment ? employeesById.get(assignment.employeeId) : undefined}
+                              entries={entries}
+                              seats={seats}
                               outside={cell.outside}
                               closed={companyClosedReason(data, shift) !== null}
-                              warnings={cell.outside ? [] : (warnings.get(key) ?? [])}
                               changed={!cell.outside && (preview?.changed.has(key) ?? false)}
                               previous={
                                 !cell.outside && preview?.changed.has(key)
-                                  ? { employee: employeesById.get(data.assignments[key]?.employeeId ?? '') }
+                                  ? (data.assignments[key] ?? []).flatMap((a) => employeesById.get(a.employeeId) ?? [])
                                   : undefined
                               }
                               onSelect={canEdit && !preview && !cell.outside ? () => setSelected(shift) : undefined}
@@ -243,7 +254,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         />
       )}
       {canEdit && regenerating && (
-        <RegenerateDialog minStart={tomorrowDay(today)} onPreview={showPreview} onClose={() => setRegenerating(false)} />
+        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} onPreview={showPreview} onClose={() => setRegenerating(false)} />
       )}
     </section>
   );

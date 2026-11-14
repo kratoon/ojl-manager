@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useT } from '../../i18n/I18nProvider';
+import type { PairingProblems } from '../../schedule/pattern';
 import { compareShifts, type Shift } from '../../schedule/shift';
 import { Modal } from '../Modal';
 import { ShiftField } from '../ShiftField';
@@ -7,14 +8,16 @@ import { ShiftField } from '../ShiftField';
 interface RegenerateDialogProps {
   /** Earliest allowed start, also the default: tomorrow's day shift. */
   minStart: Shift;
+  /** Every employee needs a pair before generating (ADR-a1cb97d). */
+  pairing: PairingProblems;
   onPreview(startAt: Shift): void;
   onClose(): void;
 }
 
-export function RegenerateDialog({ minStart, onPreview, onClose }: RegenerateDialogProps) {
+export function RegenerateDialog({ minStart, pairing, onPreview, onClose }: RegenerateDialogProps) {
   const t = useT();
   const [start, setStart] = useState<Shift | undefined>(minStart);
-  const valid = start !== undefined && compareShifts(start, minStart) >= 0;
+  const valid = start !== undefined && compareShifts(start, minStart) >= 0 && pairing.ok;
   return (
     <Modal title={t.calendar.regenerateTitle} onClose={onClose}>
       <form
@@ -26,7 +29,12 @@ export function RegenerateDialog({ minStart, onPreview, onClose }: RegenerateDia
       >
         <ShiftField label={t.calendar.regenerateStart} value={start} onChange={setStart} minDate={minStart.date} />
         <p className="hint">{t.calendar.regenerateHint}</p>
-        {start && !valid && (
+        {!pairing.ok && (
+          <p role="alert" className="error">
+            {`${t.calendar.pairingRequired} ${pairing.unpaired.map((e) => `${e.firstName} ${e.lastName}`).join(', ')}`}
+          </p>
+        )}
+        {start && compareShifts(start, minStart) < 0 && (
           <p role="alert" className="error">
             {t.calendar.regenerateTooEarly}
           </p>

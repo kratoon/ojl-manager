@@ -663,14 +663,6 @@ button.slot:focus-visible {
   font-size: 0.6875rem;
 }
 
-.slot__icons {
-  position: absolute;
-  top: 0.125rem;
-  right: 0.25rem;
-  display: flex;
-  gap: 0.125rem;
-}
-
 .slot__icon {
   display: inline-flex;
   color: var(--blue);
@@ -906,11 +898,6 @@ select:disabled {
   min-width: 0;
 }
 
-/* Leave room for the lock and warning icons in the corner. */
-.slot--icons .slot__line {
-  padding-right: 1.5rem;
-}
-
 
 
 .slot__label {
@@ -1008,4 +995,60 @@ select:disabled {
   .month__totals .preview__legend {
     flex-basis: auto;
   }
+}
+
+/* ---------- two-seat tiles ---------- */
+.slot__line {
+  align-items: flex-start;
+}
+
+.slot__label {
+  padding-top: 0.0625rem;
+}
+
+.slot__seats {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-width: 0;
+}
+
+.slot__seat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.slot__seat .slot__name {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.slot__seat .slot__icon {
+  flex: none;
+}
+
+.slot__seat--empty {
+  padding: 0 0.25rem;
+  color: var(--danger);
+  background: repeating-linear-gradient(135deg, #fdeceb, #fdeceb 6px, #fbdcd9 6px, #fbdcd9 12px);
+  box-shadow: inset 0 0 0 1px #e8a29c;
+}
+
+.slot__seat--closed {
+  padding: 0 0.25rem;
+  color: var(--muted);
+}
+
+.seat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.day--outside .slot__seat--empty,
+.day--outside .slot__seat--closed {
+  display: none;
 }

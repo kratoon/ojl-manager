@@ -14,13 +14,15 @@ function makeData(n: number, patch: (employees: Employee[], data: Record<string,
   })) as unknown as Employee[];
   const raw: Record<string, unknown> = {};
   patch(employees, raw);
+  // One seat per shift keeps these tests about a single assignee; two-seat tests set seatsPerShift themselves.
+  raw.company = { seatsPerShift: 1, ...(raw.company as object | undefined) };
   return dataSchema.parse({ employees, ...raw });
 }
 
 const range = { from: sh('2026-12-01'), to: sh('2026-12-28', 'night') }; // 4 full weeks
-const countsOf = (a: Record<string, { employeeId: string }>) => {
+const countsOf = (a: Record<string, { employeeId: string }[]>) => {
   const counts: Record<string, number> = {};
-  for (const v of Object.values(a)) counts[v.employeeId] = (counts[v.employeeId] ?? 0) + 1;
+  for (const v of Object.values(a).flat()) counts[v.employeeId] = (counts[v.employeeId] ?? 0) + 1;
   return counts;
 };
 
@@ -36,7 +38,7 @@ describe('rules', () => {
     data,
     employee: data.employees.find((e) => e.id === employeeId)!,
     shift,
-    assignedTo: (s: Shift) => assigned[shiftKey(s)],
+    assignedTo: (s: Shift) => (assigned[shiftKey(s)] ? [assigned[shiftKey(s)] as string] : []),
     gap: 0,
   });
   const blockedBy = (data: Data, id: string, shift: Shift, assigned: Record<string, string> = {}) =>
@@ -152,10 +154,11 @@ describe('generate', () => {
   it('follows the rules: no mixing, max in a row', () => {
     const data = makeData(5);
     const { assignments } = generate({ data, range, startAt });
-    for (const [key, a] of Object.entries(assignments)) {
+    for (const [key, list] of Object.entries(assignments)) {
       const [date, part] = key.split(':') as [string, 'day' | 'night'];
-      const problems = brokenRules({ ...data, assignments }, sh(date, part), a.employeeId);
-      expect(problems, key).toEqual([]);
+      for (const a of list) {
+        expect(brokenRules({ ...data, assignments }, sh(date, part), a.employeeId), key).toEqual([]);
+      }
     }
   });
 
@@ -164,8 +167,8 @@ describe('generate', () => {
       d.assignments = { '2026-12-03:day': { employeeId: 'e2', source: 'manual' }, '2026-11-20:night': { employeeId: 'e1', source: 'manual' } };
     });
     const { assignments } = generate({ data, range, startAt });
-    expect(assignments['2026-12-03:day']).toEqual({ employeeId: 'e2', source: 'manual' });
-    expect(assignments['2026-11-20:night']).toEqual({ employeeId: 'e1', source: 'manual' }); // outside range, kept
+    expect(assignments['2026-12-03:day']).toEqual([{ employeeId: 'e2', source: 'manual' }]);
+    expect(assignments['2026-11-20:night']).toEqual([{ employeeId: 'e1', source: 'manual' }]); // outside range, kept
   });
 
   it('keeps everything before the start shift and recomputes auto assignments from it', () => {
@@ -176,10 +179,10 @@ describe('generate', () => {
       };
     });
     const { assignments } = generate({ data, range, startAt: sh('2026-12-05') });
-    expect(assignments['2026-12-01:day']).toEqual({ employeeId: 'e1', source: 'auto' });
+    expect(assignments['2026-12-01:day']).toEqual([{ employeeId: 'e1', source: 'auto' }]);
     expect(assignments['2026-12-04:night']).toBeUndefined(); // before start and not assigned: stays empty
     expect(assignments['2026-12-05:day']).toBeDefined();
-    expect(assignments['2026-12-10:day']?.source).toBe('auto');
+    expect(assignments['2026-12-10:day']?.[0]?.source).toBe('auto');
   });
 
   it('leaves a shift empty with reasons when nobody can work it', () => {
@@ -224,9 +227,9 @@ describe('generate', () => {
     const data = makeData(4);
     const before = generate({ data, range, startAt }).assignments;
     const target = '2026-12-10:day';
-    const other = before[target]?.employeeId === 'e1' ? 'e2' : 'e1';
-    const locked: Data = { ...data, assignments: { [target]: { employeeId: other, source: 'manual' } } };
-    expect(generate({ data: locked, range, startAt }).assignments[target]).toEqual({ employeeId: other, source: 'manual' });
+    const other = before[target]?.[0]?.employeeId === 'e1' ? 'e2' : 'e1';
+    const locked: Data = { ...data, assignments: { [target]: [{ employeeId: other, source: 'manual' }] } };
+    expect(generate({ data: locked, range, startAt }).assignments[target]).toEqual([{ employeeId: other, source: 'manual' }]);
   });
 
   it('gives a vacationing employee proportionally more shifts around compensated PTO', () => {
@@ -269,6 +272,6 @@ describe('generate', () => {
     };
     const data = makeData(3);
     const { assignments } = generate({ data, range: { from: sh('2026-12-01'), to: sh('2026-12-01') }, startAt, rules: [...defaultRules, pick] });
-    expect(assignments['2026-12-01:day']?.employeeId).toBe('e2');
+    expect(assignments['2026-12-01:day']?.[0]?.employeeId).toBe('e2');
   });
 });
