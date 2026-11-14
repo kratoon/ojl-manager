@@ -48,7 +48,8 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
         <div className="preview__details">
           <h3>{t.calendar.previewTotals}</h3>
           <p className="preview__legend">
-            <strong>{`(${t.calendar.previewTotal})`}</strong>{' '}
+            <strong>{t.calendar.previewTotal}</strong>
+            {' ('}
             <span className="preview__legend-item">
               <SunIcon />
               {t.calendar.day}
@@ -58,6 +59,7 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
               <MoonIcon />
               {t.calendar.night}
             </span>
+            {')'}
           </p>
           <div className="preview__table-wrap">
             <table className="table preview__table">
@@ -83,8 +85,8 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
                       const c = m.counts[e.id] ?? { day: 0, night: 0 };
                       return (
                         <td key={e.id} className="num" title={`${t.calendar.previewTotal} (${t.calendar.day}/${t.calendar.night})`}>
-                          <strong>{`(${c.day + c.night})`}</strong>
-                          {` ${c.day}/${c.night}`}
+                          <strong>{c.day + c.night}</strong>
+                          {` (${c.day}/${c.night})`}
                         </td>
                       );
                     })}
