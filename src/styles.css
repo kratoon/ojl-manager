@@ -1052,3 +1052,14 @@ select:disabled {
 .day--outside .slot__seat--closed {
   display: none;
 }
+
+/* Anything clickable shows the pointer cursor (disabled controls keep not-allowed). */
+button:not(:disabled),
+summary,
+label.check,
+select:not(:disabled),
+input[type='checkbox'],
+input[type='date']::-webkit-calendar-picker-indicator,
+a[href] {
+  cursor: pointer;
+}

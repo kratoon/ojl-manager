@@ -31,7 +31,7 @@ export function RegenerateDialog({ minStart, pairing, onPreview, onClose }: Rege
         <p className="hint">{t.calendar.regenerateHint}</p>
         {!pairing.ok && (
           <p role="alert" className="error">
-            {`${t.calendar.pairingRequired} ${pairing.unpaired.map((e) => `${e.firstName} ${e.lastName}`).join(', ')}`}
+            {`${t.calendar.pairingRequired} ${pairing.unpaired.map((e) => e.name).join(', ')}`}
           </p>
         )}
         {start && compareShifts(start, minStart) < 0 && (

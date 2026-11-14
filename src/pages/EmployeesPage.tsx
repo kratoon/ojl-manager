@@ -36,7 +36,7 @@ export function EmployeesPage() {
   const { data } = state;
   const partnerName = (employee: Employee) => {
     const partner = data.employees.find((e) => e.id === employee.partnerId);
-    return partner ? `${partner.firstName} ${partner.lastName}` : '';
+    return partner?.name ?? '';
   };
   const create = async (employee: Employee) => {
     await save({ ...data, employees: [...data.employees, employee] });
@@ -74,8 +74,7 @@ export function EmployeesPage() {
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">{t.employees.firstName}</th>
-                <th scope="col">{t.employees.lastName}</th>
+                <th scope="col">{t.employees.name}</th>
                 <th scope="col">{t.employees.partner}</th>
                 {canEdit && (
                   <th scope="col" className="table__actions">
@@ -87,8 +86,7 @@ export function EmployeesPage() {
             <tbody>
               {data.employees.map((employee) => (
                 <tr key={employee.id}>
-                  <td>{employee.firstName}</td>
-                  <td>{employee.lastName}</td>
+                  <td>{employee.name}</td>
                   <td>{partnerName(employee)}</td>
                   {canEdit && (
                     <td className="table__actions">

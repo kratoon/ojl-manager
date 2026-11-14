@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dataSchema, emptyData } from '../src/data/schema';
 
-const employee = { id: '1', firstName: 'A', lastName: 'B' };
+const employee = { id: '1', name: 'A B' };
 
 describe('data schema', () => {
   it('loads an old file (only employees) and fills defaults', () => {
@@ -17,8 +17,14 @@ describe('data schema', () => {
     expect(dataSchema.safeParse({}).success).toBe(true);
   });
 
-  it('rejects an employee without a last name', () => {
-    expect(dataSchema.safeParse({ employees: [{ ...employee, lastName: ' ' }] }).success).toBe(false);
+  it('rejects an employee without a name', () => {
+    expect(dataSchema.safeParse({ employees: [{ ...employee, name: ' ' }] }).success).toBe(false);
+  });
+
+  it('migrates first and last name from older files into one name', () => {
+    const data = dataSchema.parse({ employees: [{ id: '1', firstName: 'Jana', lastName: 'Nováková' }, { id: '2', firstName: 'Petr', lastName: '' }] });
+    expect(data.employees.map((e) => e.name)).toEqual(['Jana Nováková', 'Petr']);
+    expect(data.employees[0]).not.toHaveProperty('firstName');
   });
 
   it('defaults compensate to on', () => {

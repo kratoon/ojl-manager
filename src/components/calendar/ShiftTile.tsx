@@ -36,10 +36,10 @@ export function ShiftTile({ part, entries, seats, closed, changed, previous, out
   }
 
   const partLabel = part === 'day' ? t.calendar.day : t.calendar.night;
-  const fullName = (e: Employee | undefined) => (e ? `${e.firstName} ${e.lastName}` : '');
+  const fullName = (e: Employee | undefined) => e?.name ?? '';
   const status = closed ? t.calendar.closed : t.calendar.empty;
   const emptySeats = Math.max(seats - entries.length, 0);
-  const previousText = previous && previous.length > 0 ? previous.map((e) => e.lastName).join(', ') : t.calendar.previouslyNobody;
+  const previousText = previous && previous.length > 0 ? previous.map((e) => e.name).join(', ') : t.calendar.previouslyNobody;
   const summary = entries.length > 0 ? entries.map((e) => fullName(e.employee)).join(', ') : status;
 
   const content = (
@@ -54,7 +54,7 @@ export function ShiftTile({ part, entries, seats, closed, changed, previous, out
             return (
               <span key={assignment.employeeId} className="slot__seat">
                 <span className="slot__name" title={fullName(employee)}>
-                  {employee?.lastName ?? ''}
+                  {employee?.name ?? ''}
                 </span>
                 {warnings.length > 0 && (
                   <span className="slot__icon slot__icon--warning" title={`${t.calendar.warning}: ${warningText}`} role="img" aria-label={`${t.calendar.warning}: ${warningText}`}>

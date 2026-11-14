@@ -85,8 +85,7 @@ const cs = {
   employees: {
     title: 'Zaměstnanci',
     empty: 'Zatím zde nejsou žádní zaměstnanci.',
-    firstName: 'Jméno',
-    lastName: 'Příjmení',
+    name: 'Jméno',
     add: 'Přidat zaměstnance',
     createTitle: 'Nový zaměstnanec',
     editTitle: 'Upravit zaměstnance',
@@ -211,8 +210,7 @@ const en: Labels = {
   employees: {
     title: 'Employees',
     empty: 'There are no employees yet.',
-    firstName: 'First name',
-    lastName: 'Last name',
+    name: 'Name',
     add: 'Add employee',
     createTitle: 'New employee',
     editTitle: 'Edit employee',

@@ -4,7 +4,7 @@ import { generate } from '../src/schedule/generator';
 
 describe('generate (full calendar)', () => {
   it('handles 8 employees over ~25 months quickly', () => {
-    const employees = Array.from({ length: 8 }, (_, i) => ({ id: `e${i}`, firstName: `F${i}`, lastName: `L${i}` }));
+    const employees = Array.from({ length: 8 }, (_, i) => ({ id: `e${i}`, name: `Employee ${i}` }));
     const data = dataSchema.parse({ employees });
     const t = performance.now();
     const { assignments, unfilled } = generate({

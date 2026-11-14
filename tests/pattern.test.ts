@@ -70,7 +70,7 @@ describe('patternWorks', () => {
 });
 
 function team(n: number, paired = true): Employee[] {
-  const employees = Array.from({ length: n }, (_, i) => ({ id: `e${i + 1}`, firstName: `F${i + 1}`, lastName: `L${i + 1}` })) as unknown as Employee[];
+  const employees = Array.from({ length: n }, (_, i) => ({ id: `e${i + 1}`, name: `Employee ${i + 1}` })) as unknown as Employee[];
   if (!paired) return employees;
   let list = employees;
   for (let i = 0; i + 1 < n; i += 2) list = setPartner(list, `e${i + 1}`, `e${i + 2}`);

@@ -25,8 +25,7 @@ interface VacationDraft {
 /** Shared by the create modal and the edit page. */
 export function EmployeeForm({ employee, extended = false, others = [], onSubmit, onCancel }: EmployeeFormProps) {
   const t = useT();
-  const [firstName, setFirstName] = useState(employee?.firstName ?? '');
-  const [lastName, setLastName] = useState(employee?.lastName ?? '');
+  const [name, setName] = useState(employee?.name ?? '');
   const [firstShift, setFirstShift] = useState<Shift | undefined>(employee?.firstShift);
   const [lastShift, setLastShift] = useState<Shift | undefined>(employee?.lastShift);
   const [partnerId, setPartnerId] = useState(employee?.partnerId ?? '');
@@ -44,8 +43,7 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
     const candidate = {
       ...employee,
       id: employee?.id ?? crypto.randomUUID(),
-      firstName,
-      lastName,
+      name,
       ...(extended && {
         partnerId: partnerId || undefined,
         firstShift,
@@ -67,12 +65,8 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
   return (
     <form className="form" onSubmit={handle}>
       <label className="field">
-        <span>{t.employees.firstName}</span>
-        <input autoFocus value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-      </label>
-      <label className="field">
-        <span>{t.employees.lastName}</span>
-        <input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+        <span>{t.employees.name}</span>
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} />
       </label>
 
       {extended && (
@@ -83,7 +77,7 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
               <option value="">{t.employees.noPartner}</option>
               {others.map((o) => (
                 <option key={o.id} value={o.id}>
-                  {`${o.firstName} ${o.lastName}`}
+                  {o.name}
                 </option>
               ))}
             </select>

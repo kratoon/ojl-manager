@@ -9,8 +9,7 @@ const sh = (date: string, part: 'day' | 'night' = 'day'): Shift => ({ date, part
 function makeData(n: number, patch: (employees: Employee[], data: Record<string, unknown>) => void = () => {}): Data {
   const employees = Array.from({ length: n }, (_, i) => ({
     id: `e${i + 1}`,
-    firstName: `First${i + 1}`,
-    lastName: `Last${i + 1}`,
+    name: `Employee ${i + 1}`,
   })) as unknown as Employee[];
   const raw: Record<string, unknown> = {};
   patch(employees, raw);

@@ -58,8 +58,8 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
                     {t.calendar.previewMonth}
                   </th>
                   {employees.map((e) => (
-                    <th key={e.id} scope="col" className="num" title={`${e.firstName} ${e.lastName}`}>
-                      {e.lastName}
+                    <th key={e.id} scope="col" className="num">
+                      {e.name}
                     </th>
                   ))}
                 </tr>

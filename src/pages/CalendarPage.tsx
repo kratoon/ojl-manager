@@ -48,8 +48,8 @@ function MonthTotals({ counts, employees }: { counts: Record<string, ShiftCounts
           const day = counts[e.id]?.day ?? 0;
           const night = counts[e.id]?.night ?? 0;
           return (
-            <li key={e.id} title={`${e.firstName} ${e.lastName}`}>
-              <span>{e.lastName}</span>
+            <li key={e.id}>
+              <span>{e.name}</span>
               <strong>{day + night}</strong>
               <span>{`(${day}/${night})`}</span>
             </li>

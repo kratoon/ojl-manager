@@ -39,7 +39,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
   const warningsFor = (id: string) => (id ? brokenRules({ ...data, forbiddenShifts: draftForbidden() }, shift, id) : []);
   const nameOf = (id: string) => {
     const e = data.employees.find((x) => x.id === id);
-    return e ? `${e.firstName} ${e.lastName}` : id;
+    return e ? e.name : id;
   };
 
   function draftForbidden() {
@@ -94,7 +94,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                     .filter((e) => !forbidden.includes(e.id) && (!chosen.includes(e.id) || e.id === value))
                     .map((e) => (
                       <option key={e.id} value={e.id}>
-                        {`${e.firstName} ${e.lastName}`}
+                        {e.name}
                       </option>
                     ))}
                 </select>
@@ -126,7 +126,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                 .filter((e) => !forbidden.includes(e.id) && !chosen.includes(e.id))
                 .map((e) => (
                   <option key={e.id} value={e.id}>
-                    {`${e.firstName} ${e.lastName}`}
+                    {e.name}
                   </option>
                 ))}
             </select>

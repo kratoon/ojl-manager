@@ -23,11 +23,20 @@ export const vacationSchema = z
   })
   .refine((v) => compareShifts(v.from, v.to) <= 0, { message: 'from must not be after to' });
 
-export const employeeSchema = z
+/** Older files stored firstName and lastName: they become a single name. */
+function migrateName(value: unknown): unknown {
+  if (value && typeof value === 'object' && !('name' in value)) {
+    const { firstName, lastName, ...rest } = value as Record<string, unknown>;
+    const parts = [firstName, lastName].filter((p): p is string => typeof p === 'string' && p.trim() !== '');
+    return { ...rest, name: parts.join(' ') };
+  }
+  return value;
+}
+
+const employeeObject = z
   .object({
     id: z.string().min(1),
-    firstName: z.string().trim().min(1),
-    lastName: z.string().trim().min(1),
+    name: z.string().trim().min(1),
     firstShift: shiftSchema.optional(),
     lastShift: shiftSchema.optional(),
     vacations: z.array(vacationSchema).default([]),
@@ -41,6 +50,8 @@ export const employeeSchema = z
   .refine((e) => !e.firstShift || !e.lastShift || compareShifts(e.firstShift, e.lastShift) <= 0, {
     message: 'firstShift must not be after lastShift',
   });
+
+export const employeeSchema = z.preprocess(migrateName, employeeObject);
 
 export const assignmentSchema = z.object({
   employeeId: z.string().min(1),
