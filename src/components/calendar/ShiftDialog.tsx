@@ -51,6 +51,30 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
     return [...others, ...kept, ...added];
   }
 
+  const partnerOf = (id: string) => data.employees.find((e) => e.id === id)?.partnerId ?? '';
+
+  /**
+   * Choosing an employee fills an empty other seat with their pair, as long as the pair can work this shift
+   * without breaking a rule.
+   */
+  function choose(seat: number, id: string) {
+    setSelected((list) => {
+      const next = list.map((v, i) => (i === seat ? id : v));
+      const previousPartner = partnerOf(list[seat] ?? '');
+      const partner = partnerOf(id);
+      const usable = partner !== '' && !forbidden.includes(partner) && !next.includes(partner) && warningsFor(partner).length === 0;
+      next.forEach((value, i) => {
+        if (i === seat) return;
+        // An empty seat gets the pair. Changing the first seat also moves a second seat that still holds the
+        // previous pair; a second seat picked by hand for another reason is left alone.
+        const followsFirst = seat === 0 && previousPartner !== '' && value === previousPartner;
+        if (value === '') next[i] = usable ? partner : '';
+        else if (followsFirst) next[i] = usable ? partner : '';
+      });
+      return next;
+    });
+  }
+
   /** Locks the chosen employees on this shift (every filled seat becomes manual). */
   async function persist(ids: string[], keepAuto = false) {
     const assignments = { ...data.assignments };
@@ -87,7 +111,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                 <select
                   value={value}
                   autoFocus={seat === 0}
-                  onChange={(e) => setSelected((list) => list.map((v, i) => (i === seat ? e.target.value : v)))}
+                  onChange={(e) => choose(seat, e.target.value)}
                 >
                   <option value="">{t.calendar.noEmployee}</option>
                   {employees
