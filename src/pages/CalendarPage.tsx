@@ -152,7 +152,11 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
 
       {preview && (
         <PreviewBar
-          data={data}
+          employees={sortedEmployees}
+          months={months.map(({ year, month }) => {
+            const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+            return { key, label: monthName.format(new Date(year, month, 1)), counts: monthlyCounts.get(key) ?? {} };
+          })}
           changed={preview.changed.size}
           unfilled={preview.result.unfilled}
           totals={preview.totals}

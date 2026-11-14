@@ -858,3 +858,50 @@ select:disabled {
 .month__totals strong {
   color: var(--ink);
 }
+
+/* ---------- preview: monthly table ---------- */
+.preview__table-wrap {
+  max-height: 20rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+}
+
+.preview__table {
+  font-size: 0.8125rem;
+}
+
+.preview__table th,
+.preview__table td {
+  padding: 0.25rem 0.75rem;
+  white-space: nowrap;
+}
+
+.preview__table thead th {
+  position: sticky;
+  top: 0;
+}
+
+.preview__table tbody th,
+.preview__table tfoot th {
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: normal;
+  color: var(--ink);
+  background: transparent;
+  border-bottom: 0;
+}
+
+.preview__table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview__table tfoot th,
+.preview__table tfoot td {
+  position: sticky;
+  bottom: 0;
+  font-weight: 600;
+  background: #e6e8f5;
+  border-top: 1px solid #d5d7e8;
+}

@@ -1,9 +1,11 @@
+import type { Employee } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
-import type { Data } from '../../data/schema';
 import type { Unfilled } from '../../schedule/generator';
 
 interface PreviewBarProps {
-  data: Data;
+  employees: Employee[];
+  /** Calendar months in order, with their label and shifts per employee. */
+  months: { key: string; label: string; counts: Record<string, number> }[];
   changed: number;
   unfilled: Unfilled[];
   totals: Record<string, number>;
@@ -12,7 +14,7 @@ interface PreviewBarProps {
 }
 
 /** Sticky bar shown while a regenerate preview is displayed. Nothing is saved until Apply. */
-export function PreviewBar({ data, changed, unfilled, totals, onApply, onDiscard }: PreviewBarProps) {
+export function PreviewBar({ employees, months, changed, unfilled, totals, onApply, onDiscard }: PreviewBarProps) {
   const t = useT();
   const locale = useLocale();
   const fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
@@ -40,11 +42,42 @@ export function PreviewBar({ data, changed, unfilled, totals, onApply, onDiscard
         <summary>{t.calendar.previewDetails}</summary>
         <div className="preview__details">
           <h3>{t.calendar.previewTotals}</h3>
-          <ul>
-            {data.employees.map((e) => (
-              <li key={e.id}>{`${e.firstName} ${e.lastName}: ${totals[e.id] ?? 0}`}</li>
-            ))}
-          </ul>
+          <div className="preview__table-wrap">
+            <table className="table preview__table">
+              <thead>
+                <tr>
+                  <th scope="col">{t.calendar.previewMonth}</th>
+                  {employees.map((e) => (
+                    <th key={e.id} scope="col" className="num" title={`${e.firstName} ${e.lastName}`}>
+                      {e.lastName}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {months.map((m) => (
+                  <tr key={m.key}>
+                    <th scope="row">{m.label}</th>
+                    {employees.map((e) => (
+                      <td key={e.id} className="num">
+                        {m.counts[e.id] ?? 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">{t.calendar.previewTotal}</th>
+                  {employees.map((e) => (
+                    <td key={e.id} className="num">
+                      {totals[e.id] ?? 0}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
           {unfilled.length > 0 && (
             <>
               <h3>{t.calendar.previewUnfilledList}</h3>
