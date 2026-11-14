@@ -6,18 +6,22 @@ describe('monthGrid', () => {
     // 1 Nov 2026 is a Sunday: six empty cells before it.
     const { weeks } = monthGrid(2026, 10);
     expect(weeks.every((w) => w.length === 7)).toBe(true);
-    expect(weeks[0]?.slice(0, 6).every((c) => c === null)).toBe(true);
-    expect(weeks[0]?.[6]?.day).toBe(1);
-    expect(weeks.flat().filter(Boolean)).toHaveLength(30);
+    // The padding days are real dates of the neighbouring months, marked as outside.
+    expect(weeks[0]?.slice(0, 6).map((c) => `${c.date.getMonth()}-${c.day}`)).toEqual(['9-26', '9-27', '9-28', '9-29', '9-30', '9-31']);
+    expect(weeks[0]?.slice(0, 6).every((c) => c.outside)).toBe(true);
+    expect(weeks[0]?.[6]).toMatchObject({ day: 1, outside: false });
+    expect(weeks.flat().filter((c) => !c.outside)).toHaveLength(30);
+    expect(weeks.at(-1)?.at(-1)).toMatchObject({ day: 6, outside: true }); // trailing days of December
+    expect(weeks.at(-1)?.at(-1)?.date.getMonth()).toBe(11);
   });
 
   it('handles a month starting on Monday', () => {
     // 1 Jun 2026 is a Monday.
-    expect(monthGrid(2026, 5).weeks[0]?.[0]?.day).toBe(1);
+    expect(monthGrid(2026, 5).weeks[0]?.[0]).toMatchObject({ day: 1, outside: false });
   });
 
   it('handles leap-year February', () => {
-    expect(monthGrid(2028, 1).weeks.flat().filter(Boolean)).toHaveLength(29);
+    expect(monthGrid(2028, 1).weeks.flat().filter((c) => !c.outside)).toHaveLength(29);
   });
 });
 

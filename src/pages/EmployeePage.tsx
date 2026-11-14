@@ -2,6 +2,7 @@ import { EmployeeForm } from '../components/EmployeeForm';
 import { useData } from '../data/DataProvider';
 import type { Employee } from '../data/schema';
 import { useT } from '../i18n/I18nProvider';
+import { setPartner } from '../schedule/pattern';
 import { href } from '../router';
 
 const backToList = () => {
@@ -26,7 +27,9 @@ export function EmployeePage({ id }: { id: string }) {
   const employee = data.employees.find((e) => e.id === id);
 
   const submit = async (next: Employee) => {
-    await save({ ...data, employees: data.employees.map((e) => (e.id === next.id ? next : e)) });
+    // The pair relation is kept mutual: the partner (and anybody released) is updated as well.
+    const replaced = data.employees.map((e) => (e.id === next.id ? next : e));
+    await save({ ...data, employees: setPartner(replaced, next.id, next.partnerId) });
     backToList();
   };
 
@@ -39,7 +42,7 @@ export function EmployeePage({ id }: { id: string }) {
         <>
           <h1>{t.employees.editTitle}</h1>
           <div className="card">
-            <EmployeeForm key={employee.id} employee={employee} onSubmit={submit} onCancel={backToList} />
+            <EmployeeForm key={employee.id} extended others={data.employees.filter((e) => e.id !== employee.id)} employee={employee} onSubmit={submit} onCancel={backToList} />
           </div>
         </>
       ) : (

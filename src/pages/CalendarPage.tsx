@@ -1,31 +1,132 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { calendarMonthsAhead, calendarStart } from '../calendar/config';
-import { isSameDay, monthGrid, monthsBetween } from '../calendar/dates';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { calendarMonths, calendarRange, tomorrowDay } from '../calendar/range';
+import { isSameDay, monthGrid } from '../calendar/dates';
+import { PdfDialog } from '../components/calendar/PdfDialog';
+import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
+import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
+import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
+import { ShiftDialog } from '../components/calendar/ShiftDialog';
+import { ShiftTile, type TileEntry } from '../components/calendar/ShiftTile';
+import { useData } from '../data/DataProvider';
+import type { Assignment, Data, Employee } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
+import { usePermissions } from '../permissions/PermissionsProvider';
+import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
+import { pairingProblems } from '../schedule/pattern';
+import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
+import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
+
+const monthKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
 
 // 2024-01-01 is a Monday: used only to ask Intl for localized weekday names.
 const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
 
+interface Preview {
+  result: GenerateResult;
+  changed: Set<string>;
+}
+
 export function CalendarPage() {
   const t = useT();
+  const { state, save } = useData();
+  if (state.status === 'loading') return <p>{t.common.loading}</p>;
+  if (state.status === 'error') {
+    return (
+      <p role="alert" className="error">
+        {t.employees.loadError}
+      </p>
+    );
+  }
+  return <CalendarView data={state.data} save={save} />;
+}
+
+function MonthTotals({ counts, employees }: { counts: Record<string, ShiftCounts>; employees: Employee[] }) {
+  const t = useT();
+  return (
+    <div className="month__totals">
+      <span className="month__totals-title">{t.calendar.monthTotals}</span>
+      <ShiftCountsLegend />
+      <ul>
+        {employees.map((e) => {
+          const day = counts[e.id]?.day ?? 0;
+          const night = counts[e.id]?.night ?? 0;
+          return (
+            <li key={e.id}>
+              <span>{e.name}</span>
+              <strong>{day + night}</strong>
+              <span>{`(${day}/${night})`}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<void> }) {
+  const t = useT();
   const locale = useLocale();
+  const { can } = usePermissions();
+  const canEdit = can('calendar:edit');
   const today = useMemo(() => new Date(), []);
   const currentRef = useRef<HTMLElement>(null);
 
-  const months = useMemo(() => {
-    const end = new Date(today.getFullYear(), today.getMonth() + calendarMonthsAhead, 1);
-    return monthsBetween(calendarStart, { year: end.getFullYear(), month: end.getMonth() });
-  }, [today]);
+  const [selected, setSelected] = useState<Shift | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+
+  const months = useMemo(() => calendarMonths(today), [today]);
+  const range = useMemo(() => calendarRange(today), [today]);
   // The current month, or the first one if today is before the calendar start.
-  const focus = useMemo(() => {
-    const current = months.find((m) => m.year === today.getFullYear() && m.month === today.getMonth());
-    return current ?? months[0];
-  }, [months, today]);
+  const focus = useMemo(
+    () => months.find((m) => m.year === today.getFullYear() && m.month === today.getMonth()) ?? months[0],
+    [months, today],
+  );
   const monthName = useMemo(() => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }), [locale]);
   const weekdays = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
     return Array.from({ length: 7 }, (_, i) => fmt.format(mondayReference(i)));
   }, [locale]);
+  const employeesById = useMemo(() => new Map(data.employees.map((e) => [e.id, e])), [data.employees]);
+
+  // While previewing, show the proposed schedule instead of the saved one.
+  const assignments: Record<string, Assignment[]> = preview ? preview.result.assignments : data.assignments;
+  const seats = data.company.seatsPerShift;
+  const pairing = useMemo(() => pairingProblems(data.employees), [data.employees]);
+
+  // Rule warnings for manual assignments (allowed, but flagged).
+  const warnings = useMemo(() => {
+    const view: Data = { ...data, assignments };
+    const result = new Map<string, ReasonCode[]>(); // key: "<shift key>|<employee id>"
+    for (const [key, list] of Object.entries(assignments)) {
+      const [date, part] = key.split(':') as [string, DayPart];
+      for (const a of list) {
+        if (a.source !== 'manual') continue;
+        const broken = brokenRules(view, { date, part }, a.employeeId);
+        if (broken.length > 0) result.set(`${key}|${a.employeeId}`, broken);
+      }
+    }
+    return result;
+  }, [data, assignments]);
+
+  // Day and night shifts per employee for each month (from the saved or the previewed schedule).
+  const monthlyCounts = useMemo(() => {
+    const result = new Map<string, Record<string, ShiftCounts>>();
+    for (const [key, list] of Object.entries(assignments)) {
+      const month = key.slice(0, 7);
+      const counts = result.get(month) ?? {};
+      for (const a of list) {
+        const entry = counts[a.employeeId] ?? { day: 0, night: 0 };
+        if (key.endsWith(':night')) entry.night++;
+        else entry.day++;
+        counts[a.employeeId] = entry;
+      }
+      result.set(month, counts);
+    }
+    return result;
+  }, [assignments]);
+  const sortedEmployees = useMemo(() => [...data.employees].sort(compareEmployees), [data.employees]);
 
   const focusMonth = (smooth: boolean) => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -36,9 +137,65 @@ export function CalendarPage() {
     focusMonth(false);
   }, []);
 
+  async function exportPdf(keys: string[]) {
+    const chosen = months.filter((m) => keys.includes(monthKey(m.year, m.month)));
+    if (chosen.length === 0) return;
+    // Loaded on demand: the PDF library and fonts are not part of the initial bundle.
+    const [{ buildCalendarPdf }, { loadPdfFonts }] = await Promise.all([import('../export/calendarPdf'), import('../export/fonts')]);
+    const bytes = await buildCalendarPdf({ months: chosen, data, locale, labels: t, today }, await loadPdfFonts());
+    const first = chosen[0];
+    const last = chosen[chosen.length - 1];
+    const stamp = (m: { year: number; month: number } | undefined) => (m ? monthKey(m.year, m.month) : '');
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${t.calendar.pdfFileName}_${stamp(first)}_${stamp(last)}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setPdfOpen(false);
+  }
+
+  function showPreview(startAt: Shift) {
+    // Never regenerate before tomorrow: today and the past are only changed by hand.
+    if (compareShifts(startAt, tomorrowDay(today)) < 0) return;
+    const result = generate({ data, range, startAt });
+    const before: Record<string, Assignment[]> = data.assignments;
+    const after: Record<string, Assignment[]> = result.assignments;
+    const people = (list: Assignment[] | undefined) => (list ?? []).map((a) => a.employeeId).sort().join(',');
+    const changed = new Set<string>();
+    for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+      if (people(before[key]) !== people(after[key])) changed.add(key);
+    }
+    setPreview({ result, changed });
+    setRegenerating(false);
+  }
+
+  async function applyPreview() {
+    if (!preview) return;
+    await save({ ...data, assignments: preview.result.assignments });
+    setPreview(null);
+  }
+
   return (
     <section>
-      <h1>{t.calendar.title}</h1>
+      <div className="page-header">
+        <h1>{t.calendar.title}</h1>
+      </div>
+
+      {preview && (
+        <PreviewBar
+          employees={sortedEmployees}
+          months={months.map(({ year, month }) => {
+            const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+            return { key, label: monthName.format(new Date(year, month, 1)), counts: monthlyCounts.get(key) ?? {} };
+          })}
+          changed={preview.changed.size}
+          unfilled={preview.result.unfilled}
+          onApply={() => void applyPreview()}
+          onDiscard={() => setPreview(null)}
+        />
+      )}
+
       {months.map(({ year, month }) => {
         const isFocus = year === focus?.year && month === focus.month;
         const grid = monthGrid(year, month);
@@ -55,30 +212,87 @@ export function CalendarPage() {
               </div>
               {grid.weeks.map((week, w) => (
                 <div key={w} className="week" role="row">
-                  {week.map((cell, d) =>
-                    cell ? (
-                      <div key={d} className={isSameDay(cell.date, today) ? 'day day--today' : 'day'} role="gridcell">
+                  {week.map((cell, d) => {
+                    const date = toIsoDate(cell.date);
+                    const dayClass = cell.outside ? 'day day--outside' : isSameDay(cell.date, today) ? 'day day--today' : 'day';
+                    return (
+                      <div key={d} className={dayClass} role="gridcell" aria-disabled={cell.outside || undefined}>
                         <span className="day__number">{cell.day}</span>
-                        <div className="slot slot--day">
-                          <span className="slot__label">{t.calendar.day}</span>
-                        </div>
-                        <div className="slot slot--night">
-                          <span className="slot__label">{t.calendar.night}</span>
-                        </div>
+                        {(['day', 'night'] as const).map((part) => {
+                          const shift: Shift = { date, part };
+                          const key = shiftKey(shift);
+                          const entries: TileEntry[] = (assignments[key] ?? []).map((assignment) => ({
+                            assignment,
+                            employee: employeesById.get(assignment.employeeId),
+                            warnings: cell.outside ? [] : (warnings.get(`${key}|${assignment.employeeId}`) ?? []),
+                          }));
+                          return (
+                            <ShiftTile
+                              key={part}
+                              part={part}
+                              entries={entries}
+                              seats={seats}
+                              outside={cell.outside}
+                              closed={companyClosedReason(data, shift) !== null}
+                              changed={!cell.outside && (preview?.changed.has(key) ?? false)}
+                              previous={
+                                !cell.outside && preview?.changed.has(key)
+                                  ? (data.assignments[key] ?? []).flatMap((a) => employeesById.get(a.employeeId) ?? [])
+                                  : undefined
+                              }
+                              onSelect={canEdit && !preview && !cell.outside ? () => setSelected(shift) : undefined}
+                            />
+                          );
+                        })}
                       </div>
-                    ) : (
-                      <div key={d} className="day day--empty" role="gridcell" />
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
               ))}
             </div>
+            <MonthTotals counts={monthlyCounts.get(`${year}-${String(month + 1).padStart(2, '0')}`) ?? {}} employees={sortedEmployees} />
           </section>
         );
       })}
-      <button type="button" className="button button--primary fab" onClick={() => focusMonth(true)}>
-        {t.calendar.currentMonth}
-      </button>
+
+      <div className="fab-bar">
+        {canEdit && (
+          <button type="button" className="button" disabled={preview !== null} onClick={() => setRegenerating(true)}>
+            {t.calendar.regenerate}
+          </button>
+        )}
+        <button type="button" className="button" disabled={preview !== null} onClick={() => setPdfOpen(true)}>
+          {t.calendar.pdfButton}
+        </button>
+        <button type="button" className="button button--primary" onClick={() => focusMonth(true)}>
+          {t.calendar.currentMonth}
+        </button>
+      </div>
+
+      {canEdit && selected && (
+        <ShiftDialog
+          shift={selected}
+          data={data}
+          onSave={async (next) => {
+            await save(next);
+            setSelected(null);
+          }}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {pdfOpen && (
+        <PdfDialog
+          months={months.map(({ year, month }) => ({ key: monthKey(year, month), label: monthName.format(new Date(year, month, 1)) }))}
+          defaultSelected={months
+            .filter((m) => m.year > (focus?.year ?? 0) || (m.year === focus?.year && m.month >= (focus?.month ?? 0)))
+            .map((m) => monthKey(m.year, m.month))}
+          onDownload={exportPdf}
+          onClose={() => setPdfOpen(false)}
+        />
+      )}
+      {canEdit && regenerating && (
+        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} onPreview={showPreview} onClose={() => setRegenerating(false)} />
+      )}
     </section>
   );
 }

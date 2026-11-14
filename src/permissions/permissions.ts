@@ -2,7 +2,7 @@
 
 export type Mode = 'view' | 'edit';
 
-export const features = ['home', 'employees', 'calendar'] as const;
+export const features = ['home', 'employees', 'calendar', 'rules'] as const;
 export type Feature = (typeof features)[number];
 export type Permission = `${Feature}:view` | `${Feature}:edit`;
 

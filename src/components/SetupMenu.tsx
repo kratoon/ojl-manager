@@ -23,7 +23,10 @@ export function SetupMenu() {
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, rootRef);
 
-  const menu: { route: Route; label: string }[] = [{ route: { name: 'employees' }, label: t.nav.employees }];
+  const menu: { route: Route; label: string }[] = [
+    { route: { name: 'employees' }, label: t.nav.employees },
+    { route: { name: 'rules' }, label: t.nav.rules },
+  ];
   const items = menu.filter((item) =>
     can(routePermissions[item.route.name]),
   );

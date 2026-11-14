@@ -1,12 +1,13 @@
 ---
 id: 1bfc89deab6a
 title: Shift scheduling
-status: todo
+status: done
 project: OJL
 type: epic
 priority: high
 labels: []
 createdAt: 2026-11-14T18:49:38.346Z
+updatedAt: 2026-11-14T19:46:17.217Z
 ---
 
 ## Description
