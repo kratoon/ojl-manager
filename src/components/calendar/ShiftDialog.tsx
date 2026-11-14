@@ -53,12 +53,14 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
 
   const partnerOf = (id: string) => data.employees.find((e) => e.id === id)?.partnerId ?? '';
 
-  /** The pair of an employee chosen in another seat, offered for an empty seat (never filled automatically). */
+  /**
+   * The pair of an employee chosen in another seat, offered for this seat (never applied automatically).
+   * It is offered for an empty seat, and also for a filled one when the two chosen employees are not a pair.
+   */
   function pairSuggestion(seat: number): string {
-    if (selected[seat] !== '') return '';
     for (let i = 0; i < selected.length; i++) {
       const partner = i === seat ? '' : partnerOf(selected[i] ?? '');
-      if (partner && !chosen.includes(partner) && !forbidden.includes(partner)) return partner;
+      if (partner && partner !== selected[seat] && !chosen.includes(partner) && !forbidden.includes(partner)) return partner;
     }
     return '';
   }
@@ -117,7 +119,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                   className="link-button"
                   onClick={() => setSelected((list) => list.map((v, i) => (i === seat ? pairSuggestion(seat) : v)))}
                 >
-                  {`${t.calendar.fillPair}: ${nameOf(pairSuggestion(seat))}`}
+                  {`${value === '' ? t.calendar.fillPair : t.calendar.usePair}: ${nameOf(pairSuggestion(seat))}`}
                 </button>
               )}
               {warnings.length > 0 && (
