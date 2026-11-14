@@ -1,5 +1,6 @@
 import { Header } from './components/Header';
 import { useT } from './i18n/I18nProvider';
+import { CalendarPage } from './pages/CalendarPage';
 import { EmployeePage } from './pages/EmployeePage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { HomePage } from './pages/HomePage';
@@ -14,6 +15,7 @@ export function App() {
   let page = <HomePage />;
   if (!can(routePermissions[route.name])) page = <p role="alert">{t.common.noAccess}</p>;
   else if (route.name === 'employees') page = <EmployeesPage />;
+  else if (route.name === 'calendar') page = <CalendarPage />;
   else if (route.name === 'employee') page = <EmployeePage id={route.id} />;
 
   return (

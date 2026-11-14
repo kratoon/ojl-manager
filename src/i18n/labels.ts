@@ -8,6 +8,15 @@ const cs = {
   nav: {
     setup: 'Nastavení',
     employees: 'Zaměstnanci',
+    calendar: 'Kalendář',
+    main: 'Hlavní navigace',
+    menu: 'Menu',
+  },
+  calendar: {
+    title: 'Kalendář',
+    day: 'Den',
+    night: 'Noc',
+    currentMonth: 'Tento měsíc',
   },
   employees: {
     title: 'Zaměstnanci',
@@ -47,6 +56,15 @@ const en: Labels = {
   nav: {
     setup: 'Setup',
     employees: 'Employees',
+    calendar: 'Calendar',
+    main: 'Main navigation',
+    menu: 'Menu',
+  },
+  calendar: {
+    title: 'Calendar',
+    day: 'Day',
+    night: 'Night',
+    currentMonth: 'This month',
   },
   employees: {
     title: 'Employees',
