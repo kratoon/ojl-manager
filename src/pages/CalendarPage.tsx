@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { calendarMonths, calendarRange, tomorrowDay } from '../calendar/range';
 import { isSameDay, monthGrid } from '../calendar/dates';
 import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
+import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { ShiftTile } from '../components/calendar/ShiftTile';
@@ -40,13 +41,19 @@ function MonthTotals({ counts, employees }: { counts: Record<string, ShiftCounts
   return (
     <div className="month__totals">
       <span className="month__totals-title">{t.calendar.monthTotals}</span>
+      <ShiftCountsLegend />
       <ul>
-        {employees.map((e) => (
-          <li key={e.id} title={`${e.firstName} ${e.lastName}`}>
-            <span>{e.lastName}</span>
-            <strong>{(counts[e.id]?.day ?? 0) + (counts[e.id]?.night ?? 0)}</strong>
-          </li>
-        ))}
+        {employees.map((e) => {
+          const day = counts[e.id]?.day ?? 0;
+          const night = counts[e.id]?.night ?? 0;
+          return (
+            <li key={e.id} title={`${e.firstName} ${e.lastName}`}>
+              <span>{e.lastName}</span>
+              <strong>{day + night}</strong>
+              <span>{`(${day}/${night})`}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

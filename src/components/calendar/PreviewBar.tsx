@@ -1,7 +1,7 @@
 import type { Employee } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import type { Unfilled } from '../../schedule/generator';
-import { MoonIcon, SunIcon } from './icons';
+import { ShiftCountsLegend } from './ShiftCountsLegend';
 
 export interface ShiftCounts {
   day: number;
@@ -47,19 +47,8 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
         <summary>{t.calendar.previewDetails}</summary>
         <div className="preview__details">
           <h3>{t.calendar.previewTotals}</h3>
-          <p className="preview__legend">
-            <strong>{t.calendar.previewTotal}</strong>
-            {' ('}
-            <span className="preview__legend-item">
-              <SunIcon />
-              {t.calendar.day}
-            </span>
-            {' / '}
-            <span className="preview__legend-item">
-              <MoonIcon />
-              {t.calendar.night}
-            </span>
-            {')'}
+          <p className="preview__legend-line">
+            <ShiftCountsLegend />
           </p>
           <div className="preview__table-wrap">
             <table className="table preview__table">

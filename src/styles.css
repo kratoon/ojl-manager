@@ -994,3 +994,18 @@ select:disabled {
   border-top: 0;
   box-shadow: inset 0 1px 0 var(--border);
 }
+
+.preview__legend-line {
+  margin: 0 0 0.5rem;
+}
+
+.month__totals .preview__legend {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+}
+
+@media (min-width: 40rem) {
+  .month__totals .preview__legend {
+    flex-basis: auto;
+  }
+}
