@@ -799,3 +799,13 @@ button.slot:focus-visible {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.card--wide {
+  max-width: 40rem;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
