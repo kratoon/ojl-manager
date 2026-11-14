@@ -53,26 +53,14 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
 
   const partnerOf = (id: string) => data.employees.find((e) => e.id === id)?.partnerId ?? '';
 
-  /**
-   * Choosing an employee fills an empty other seat with their pair, as long as the pair can work this shift
-   * without breaking a rule.
-   */
-  function choose(seat: number, id: string) {
-    setSelected((list) => {
-      const next = list.map((v, i) => (i === seat ? id : v));
-      const previousPartner = partnerOf(list[seat] ?? '');
-      const partner = partnerOf(id);
-      const usable = partner !== '' && !forbidden.includes(partner) && !next.includes(partner) && warningsFor(partner).length === 0;
-      next.forEach((value, i) => {
-        if (i === seat) return;
-        // An empty seat gets the pair. Changing the first seat also moves a second seat that still holds the
-        // previous pair; a second seat picked by hand for another reason is left alone.
-        const followsFirst = seat === 0 && previousPartner !== '' && value === previousPartner;
-        if (value === '') next[i] = usable ? partner : '';
-        else if (followsFirst) next[i] = usable ? partner : '';
-      });
-      return next;
-    });
+  /** The pair of an employee chosen in another seat, offered for an empty seat (never filled automatically). */
+  function pairSuggestion(seat: number): string {
+    if (selected[seat] !== '') return '';
+    for (let i = 0; i < selected.length; i++) {
+      const partner = i === seat ? '' : partnerOf(selected[i] ?? '');
+      if (partner && !chosen.includes(partner) && !forbidden.includes(partner)) return partner;
+    }
+    return '';
   }
 
   /** Locks the chosen employees on this shift (every filled seat becomes manual). */
@@ -111,7 +99,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                 <select
                   value={value}
                   autoFocus={seat === 0}
-                  onChange={(e) => choose(seat, e.target.value)}
+                  onChange={(e) => setSelected((list) => list.map((v, i) => (i === seat ? e.target.value : v)))}
                 >
                   <option value="">{t.calendar.noEmployee}</option>
                   {employees
@@ -123,6 +111,15 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                     ))}
                 </select>
               </label>
+              {pairSuggestion(seat) && (
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => setSelected((list) => list.map((v, i) => (i === seat ? pairSuggestion(seat) : v)))}
+                >
+                  {`${t.calendar.fillPair}: ${nameOf(pairSuggestion(seat))}`}
+                </button>
+              )}
               {warnings.length > 0 && (
                 <p role="status" className="warning">
                   {`${t.calendar.warning}: ${warnings.map((w) => t.reasons[w]).join(', ')}`}
