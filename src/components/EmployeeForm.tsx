@@ -17,7 +17,8 @@ export function EmployeeForm({ employee, onSubmit, onCancel }: EmployeeFormProps
 
   async function handle(e: FormEvent) {
     e.preventDefault();
-    const parsed = employeeSchema.safeParse({ id: employee?.id ?? crypto.randomUUID(), firstName, lastName });
+    // Spread the existing employee so fields this form does not edit (vacations, overrides) are kept.
+    const parsed = employeeSchema.safeParse({ ...employee, id: employee?.id ?? crypto.randomUUID(), firstName, lastName });
     if (!parsed.success) return setError(true);
     try {
       await onSubmit(parsed.data);

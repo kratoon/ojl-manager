@@ -40,7 +40,10 @@ export function EmployeesPage() {
   };
   const remove = async (employee: Employee) => {
     if (!window.confirm(t.employees.deleteConfirm)) return;
-    await save({ ...data, employees: data.employees.filter((e) => e.id !== employee.id) });
+    // Drop everything that refers to the removed employee.
+    const assignments = Object.fromEntries(Object.entries(data.assignments).filter(([, a]) => a.employeeId !== employee.id));
+    const forbiddenShifts = data.forbiddenShifts.filter((f) => f.employeeId !== employee.id);
+    await save({ ...data, employees: data.employees.filter((e) => e.id !== employee.id), assignments, forbiddenShifts });
   };
 
   return (
