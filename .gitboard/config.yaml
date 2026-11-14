@@ -1,0 +1,14 @@
+version: 1
+projects:
+  - key: OJL
+    name: OJL Manager
+  - key: ADR
+    name: Architecture Decisions
+    description: Architecture decision records
+    columns:
+      - id: proposed
+        done: false
+      - id: accepted
+        done: true
+      - id: rejected
+        done: true
