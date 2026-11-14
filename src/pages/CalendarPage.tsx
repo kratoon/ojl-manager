@@ -6,12 +6,12 @@ import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { ShiftTile } from '../components/calendar/ShiftTile';
 import { useData } from '../data/DataProvider';
-import type { Assignment, Data } from '../data/schema';
+import type { Assignment, Data, Employee } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
-import { generate, type GenerateResult } from '../schedule/generator';
+import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
 import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
-import { shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
+import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
 
 // 2024-01-01 is a Monday: used only to ask Intl for localized weekday names.
 const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
@@ -34,6 +34,23 @@ export function CalendarPage() {
     );
   }
   return <CalendarView data={state.data} save={save} />;
+}
+
+function MonthTotals({ counts, employees }: { counts: Record<string, number>; employees: Employee[] }) {
+  const t = useT();
+  return (
+    <div className="month__totals">
+      <span className="month__totals-title">{t.calendar.monthTotals}</span>
+      <ul>
+        {employees.map((e) => (
+          <li key={e.id} title={`${e.firstName} ${e.lastName}`}>
+            <span>{e.lastName}</span>
+            <strong>{counts[e.id] ?? 0}</strong>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<void> }) {
@@ -78,6 +95,19 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     return result;
   }, [data, assignments]);
 
+  // Shifts per employee for each month (from the saved or the previewed schedule).
+  const monthlyCounts = useMemo(() => {
+    const result = new Map<string, Record<string, number>>();
+    for (const [key, a] of Object.entries(assignments)) {
+      const month = key.slice(0, 7);
+      const counts = result.get(month) ?? {};
+      counts[a.employeeId] = (counts[a.employeeId] ?? 0) + 1;
+      result.set(month, counts);
+    }
+    return result;
+  }, [assignments]);
+  const sortedEmployees = useMemo(() => [...data.employees].sort(compareEmployees), [data.employees]);
+
   const focusMonth = (smooth: boolean) => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     currentRef.current?.scrollIntoView({ block: 'start', behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
@@ -88,6 +118,8 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   }, []);
 
   function showPreview(startAt: Shift) {
+    // Never regenerate before tomorrow: today and the past are only changed by hand.
+    if (compareShifts(startAt, tomorrowDay(today)) < 0) return;
     const result = generate({ data, range, startAt });
     const before: Record<string, Assignment> = data.assignments;
     const after: Record<string, Assignment> = result.assignments;
@@ -174,6 +206,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
                 </div>
               ))}
             </div>
+            <MonthTotals counts={monthlyCounts.get(`${year}-${String(month + 1).padStart(2, '0')}`) ?? {}} employees={sortedEmployees} />
           </section>
         );
       })}
@@ -194,7 +227,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         />
       )}
       {canEdit && regenerating && (
-        <RegenerateDialog defaultStart={tomorrowDay(today)} onPreview={showPreview} onClose={() => setRegenerating(false)} />
+        <RegenerateDialog minStart={tomorrowDay(today)} onPreview={showPreview} onClose={() => setRegenerating(false)} />
       )}
     </section>
   );

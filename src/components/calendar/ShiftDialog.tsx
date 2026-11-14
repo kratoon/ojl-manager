@@ -141,7 +141,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
             {t.common.cancel}
           </button>
           <button type="submit" className="button button--primary">
-            {t.common.save}
+            {selected ? t.calendar.lockAction : t.common.save}
           </button>
         </div>
       </form>

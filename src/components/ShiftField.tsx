@@ -6,10 +6,12 @@ interface ShiftFieldProps {
   label: string;
   value: Shift | undefined;
   onChange(value: Shift | undefined): void;
+  /** Earliest selectable date (ISO). */
+  minDate?: string;
 }
 
 /** Picks a shift: a date plus the day or the night shift (ADR-fec8e13). Empty date = no value. */
-export function ShiftField({ label, value, onChange }: ShiftFieldProps) {
+export function ShiftField({ label, value, onChange, minDate }: ShiftFieldProps) {
   const t = useT();
   const id = useId();
   const part = value?.part ?? 'day';
@@ -19,6 +21,7 @@ export function ShiftField({ label, value, onChange }: ShiftFieldProps) {
       <div className="shift-field">
         <input
           type="date"
+          min={minDate}
           aria-label={`${label}: ${t.shift.date}`}
           value={value?.date ?? ''}
           onChange={(e) => onChange(e.target.value ? { date: e.target.value, part } : undefined)}

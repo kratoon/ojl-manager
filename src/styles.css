@@ -824,3 +824,37 @@ select {
 select:disabled {
   cursor: not-allowed;
 }
+
+/* ---------- monthly totals ---------- */
+.month__totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.month__totals-title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.month__totals ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.month__totals li {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.month__totals strong {
+  color: var(--ink);
+}
