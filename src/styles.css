@@ -518,25 +518,6 @@ h1 {
   border-top: 1px solid var(--border);
 }
 
-.slot__label {
-  opacity: 0.8;
-}
-
-@media (max-width: 39.99rem) {
-  .day {
-    min-height: 4.5rem;
-  }
-
-  .slot__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
 @media (min-width: 40rem) {
   .nav {
     margin: 0 auto 0 1.5rem;
@@ -935,4 +916,77 @@ select:disabled {
 
 .preview__table tbody td:nth-child(3n + 2) {
   border-left: 1px solid var(--border);
+}
+
+/* ---------- calendar: compact tiles, outside dates ---------- */
+.slot__line {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* Leave room for the lock and warning icons in the corner. */
+.slot--icons .slot__line {
+  padding-right: 1.5rem;
+}
+
+
+
+.slot__label {
+  display: inline-flex;
+  flex: none;
+  color: var(--muted);
+}
+
+.slot__previous {
+  overflow: hidden;
+  font-size: 0.625rem;
+  color: var(--blue-mid);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day {
+  min-height: 4.5rem;
+}
+
+@media (min-width: 40rem) {
+  .day {
+    min-height: 5rem;
+  }
+}
+
+/* Dates of the neighbouring months: reference only, greyed out, not clickable. */
+.day--outside {
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.day--outside .day__number {
+  color: #a3a6bd;
+}
+
+.day--outside .slot {
+  color: #a3a6bd;
+  background: transparent;
+  box-shadow: none;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.day--outside .slot__name {
+  color: #7d8099;
+  font-weight: 400;
+}
+
+.day--outside .slot--night {
+  border-top-color: #e6e7f2;
+}
+
+/* Narrow screens: the day/night tint tells the shifts apart, so the names get the space. */
+@media (max-width: 39.99rem) {
+  .slot__label {
+    display: none;
+  }
 }

@@ -181,10 +181,10 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
               {grid.weeks.map((week, w) => (
                 <div key={w} className="week" role="row">
                   {week.map((cell, d) => {
-                    if (!cell) return <div key={d} className="day day--empty" role="gridcell" />;
                     const date = toIsoDate(cell.date);
+                    const dayClass = cell.outside ? 'day day--outside' : isSameDay(cell.date, today) ? 'day day--today' : 'day';
                     return (
-                      <div key={d} className={isSameDay(cell.date, today) ? 'day day--today' : 'day'} role="gridcell">
+                      <div key={d} className={dayClass} role="gridcell" aria-disabled={cell.outside || undefined}>
                         <span className="day__number">{cell.day}</span>
                         {(['day', 'night'] as const).map((part) => {
                           const shift: Shift = { date, part };
@@ -196,10 +196,16 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
                               part={part}
                               assignment={assignment}
                               employee={assignment ? employeesById.get(assignment.employeeId) : undefined}
+                              outside={cell.outside}
                               closed={companyClosedReason(data, shift) !== null}
-                              warnings={warnings.get(key) ?? []}
-                              changed={preview?.changed.has(key) ?? false}
-                              onSelect={canEdit && !preview ? () => setSelected(shift) : undefined}
+                              warnings={cell.outside ? [] : (warnings.get(key) ?? [])}
+                              changed={!cell.outside && (preview?.changed.has(key) ?? false)}
+                              previous={
+                                !cell.outside && preview?.changed.has(key)
+                                  ? { employee: employeesById.get(data.assignments[key]?.employeeId ?? '') }
+                                  : undefined
+                              }
+                              onSelect={canEdit && !preview && !cell.outside ? () => setSelected(shift) : undefined}
                             />
                           );
                         })}

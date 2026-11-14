@@ -1,5 +1,9 @@
-/** A day cell in a month grid, or null for padding before/after the month. */
-export type DayCell = { date: Date; day: number } | null;
+/** A day cell in a month grid. `outside` marks padding days that belong to the previous or next month. */
+export interface DayCell {
+  date: Date;
+  day: number;
+  outside: boolean;
+}
 
 export interface MonthGrid {
   year: number;
@@ -10,11 +14,15 @@ export interface MonthGrid {
 export function monthGrid(year: number, month: number): MonthGrid {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const leading = (new Date(year, month, 1).getDay() + 6) % 7; // Monday = 0
+  const cell = (offset: number, outside: boolean): DayCell => {
+    const date = new Date(year, month, 1 + offset);
+    return { date, day: date.getDate(), outside };
+  };
   const cells: DayCell[] = [
-    ...Array<DayCell>(leading).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i): DayCell => ({ date: new Date(year, month, i + 1), day: i + 1 })),
+    ...Array.from({ length: leading }, (_, i) => cell(i - leading, true)),
+    ...Array.from({ length: daysInMonth }, (_, i) => cell(i, false)),
   ];
-  while (cells.length % 7 !== 0) cells.push(null);
+  while (cells.length % 7 !== 0) cells.push(cell(cells.length - leading, true));
   const weeks: DayCell[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return { year, month, weeks };
