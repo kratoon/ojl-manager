@@ -83,6 +83,8 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           </select>
         </label>
 
+        <p className="hint">{t.calendar.lockHint}</p>
+
         {warnings.length > 0 && (
           <p role="status" className="warning">
             {`${t.calendar.warning}: ${warnings.map((w) => t.reasons[w]).join(', ')}`}
@@ -101,7 +103,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           ))}
           <div className="forbidden-row">
             <select aria-label={t.calendar.forbiddenTitle} value={toForbid} onChange={(e) => setToForbid(e.target.value)}>
-              <option value="">{t.calendar.noEmployee}</option>
+              <option value="">{t.calendar.selectEmployee}</option>
               {employees
                 .filter((e) => !forbidden.includes(e.id) && e.id !== selected)
                 .map((e) => (
