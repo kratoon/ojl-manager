@@ -41,7 +41,6 @@ function readBody(req: IncomingMessage): Promise<string> {
 export function localDataPlugin(): Plugin {
   const dir = join(process.cwd(), 'data');
   const local = join(dir, 'local.json');
-  const sample = join(dir, 'sample.json');
 
   return {
     name: 'local-data-api',
@@ -56,8 +55,7 @@ export function localDataPlugin(): Plugin {
         try {
           if (!originAllowed(req)) return send(403, { error: 'forbidden origin' });
           if (req.method === 'GET') {
-            const file = existsSync(local) ? local : existsSync(sample) ? sample : null;
-            const raw = file ? JSON.parse(await readFile(file, 'utf8')) : emptyData;
+            const raw = existsSync(local) ? JSON.parse(await readFile(local, 'utf8')) : emptyData;
             return send(200, dataSchema.parse(raw));
           }
           if (req.method === 'PUT') {
