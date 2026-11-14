@@ -873,23 +873,59 @@ select:disabled {
 
 .preview__table th,
 .preview__table td {
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 0.625rem;
   white-space: nowrap;
 }
 
 .preview__table thead th {
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 
-.preview__table tbody th,
-.preview__table tfoot th {
+/* Second header row sits under the first one. */
+.preview__table thead tr:nth-child(2) th {
+  top: 1.75rem;
+  font-weight: 400;
+}
+
+.preview__table th.group {
+  text-align: center;
+  border-left: 1px solid #d5d7e8;
+}
+
+.preview__table .sub--total,
+.preview__table .num--total {
   font-weight: 600;
+}
+
+/* Every body cell in a row, the month name included, gets the same divider. */
+.preview__table tbody tr + tr > * {
+  border-top: 1px solid var(--border);
+}
+
+.preview__table tbody th {
+  font-weight: 600;
+  text-align: left;
   text-transform: capitalize;
   letter-spacing: normal;
   color: var(--ink);
-  background: transparent;
-  border-bottom: 0;
+  background: var(--surface);
+}
+
+.preview__table tbody tr:hover > * {
+  background: var(--bg);
+}
+
+.preview__table .preview__month {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.preview__table thead .preview__month {
+  background: #e6e8f5;
+  z-index: 3;
 }
 
 .preview__table .num {
@@ -897,11 +933,6 @@ select:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-.preview__table tfoot th,
-.preview__table tfoot td {
-  position: sticky;
-  bottom: 0;
-  font-weight: 600;
-  background: #e6e8f5;
-  border-top: 1px solid #d5d7e8;
+.preview__table tbody td:nth-child(3n + 2) {
+  border-left: 1px solid var(--border);
 }

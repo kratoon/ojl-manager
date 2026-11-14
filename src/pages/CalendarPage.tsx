@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calendarMonths, calendarRange, tomorrowDay } from '../calendar/range';
 import { isSameDay, monthGrid } from '../calendar/dates';
-import { PreviewBar } from '../components/calendar/PreviewBar';
+import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { ShiftTile } from '../components/calendar/ShiftTile';
@@ -19,7 +19,6 @@ const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
 interface Preview {
   result: GenerateResult;
   changed: Set<string>;
-  totals: Record<string, number>;
 }
 
 export function CalendarPage() {
@@ -36,7 +35,7 @@ export function CalendarPage() {
   return <CalendarView data={state.data} save={save} />;
 }
 
-function MonthTotals({ counts, employees }: { counts: Record<string, number>; employees: Employee[] }) {
+function MonthTotals({ counts, employees }: { counts: Record<string, ShiftCounts>; employees: Employee[] }) {
   const t = useT();
   return (
     <div className="month__totals">
@@ -45,7 +44,7 @@ function MonthTotals({ counts, employees }: { counts: Record<string, number>; em
         {employees.map((e) => (
           <li key={e.id} title={`${e.firstName} ${e.lastName}`}>
             <span>{e.lastName}</span>
-            <strong>{counts[e.id] ?? 0}</strong>
+            <strong>{(counts[e.id]?.day ?? 0) + (counts[e.id]?.night ?? 0)}</strong>
           </li>
         ))}
       </ul>
@@ -95,13 +94,16 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     return result;
   }, [data, assignments]);
 
-  // Shifts per employee for each month (from the saved or the previewed schedule).
+  // Day and night shifts per employee for each month (from the saved or the previewed schedule).
   const monthlyCounts = useMemo(() => {
-    const result = new Map<string, Record<string, number>>();
+    const result = new Map<string, Record<string, ShiftCounts>>();
     for (const [key, a] of Object.entries(assignments)) {
       const month = key.slice(0, 7);
       const counts = result.get(month) ?? {};
-      counts[a.employeeId] = (counts[a.employeeId] ?? 0) + 1;
+      const entry = counts[a.employeeId] ?? { day: 0, night: 0 };
+      if (key.endsWith(':night')) entry.night++;
+      else entry.day++;
+      counts[a.employeeId] = entry;
       result.set(month, counts);
     }
     return result;
@@ -127,9 +129,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
       if (before[key]?.employeeId !== after[key]?.employeeId) changed.add(key);
     }
-    const totals: Record<string, number> = {};
-    for (const a of Object.values(result.assignments)) totals[a.employeeId] = (totals[a.employeeId] ?? 0) + 1;
-    setPreview({ result, changed, totals });
+    setPreview({ result, changed });
     setRegenerating(false);
   }
 
@@ -159,7 +159,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           })}
           changed={preview.changed.size}
           unfilled={preview.result.unfilled}
-          totals={preview.totals}
           onApply={() => void applyPreview()}
           onDiscard={() => setPreview(null)}
         />
