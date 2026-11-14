@@ -4,6 +4,7 @@
 const cs = {
   app: {
     title: 'OJL Manager',
+    shortTitle: 'OJL',
   },
   nav: {
     setup: 'Nastavení',
@@ -138,6 +139,7 @@ export type Labels = typeof cs;
 const en: Labels = {
   app: {
     title: 'OJL Manager',
+    shortTitle: 'OJL',
   },
   nav: {
     setup: 'Setup',

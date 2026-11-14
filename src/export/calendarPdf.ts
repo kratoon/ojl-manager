@@ -63,8 +63,8 @@ export async function buildCalendarPdf(input: CalendarPdfInput, fonts: FontBytes
 
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkitModule.default ?? fontkitModule);
-  pdf.setTitle(input.labels.app.title);
-  pdf.setCreator(input.labels.app.title);
+  pdf.setTitle(input.labels.app.shortTitle);
+  pdf.setCreator(input.labels.app.shortTitle);
 
   const embed = async (latin: Uint8Array, ext: Uint8Array): Promise<Face> => {
     const [pdfLatin, pdfExt] = await Promise.all([pdf.embedFont(latin, { subset: true }), pdf.embedFont(ext, { subset: true })]);
@@ -128,7 +128,7 @@ export async function buildCalendarPdf(input: CalendarPdfInput, fonts: FontBytes
     // Title
     const title = capitalize(fmtMonth.format(new Date(year, month, 1)));
     text(bold, title, MARGIN, MARGIN + 18, 20, colors.navy);
-    const appTitle = labels.app.title;
+    const appTitle = labels.app.shortTitle;
     text(regular, appTitle, W - MARGIN - width(regular, appTitle, 9), MARGIN + 14, 9, colors.muted);
 
     // Grid geometry
