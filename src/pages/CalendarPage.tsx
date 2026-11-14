@@ -1,31 +1,82 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { calendarMonthsAhead, calendarStart } from '../calendar/config';
-import { isSameDay, monthGrid, monthsBetween } from '../calendar/dates';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { calendarMonths, calendarRange, tomorrowDay } from '../calendar/range';
+import { isSameDay, monthGrid } from '../calendar/dates';
+import { PreviewBar } from '../components/calendar/PreviewBar';
+import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
+import { ShiftDialog } from '../components/calendar/ShiftDialog';
+import { ShiftTile } from '../components/calendar/ShiftTile';
+import { useData } from '../data/DataProvider';
+import type { Assignment, Data } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
+import { usePermissions } from '../permissions/PermissionsProvider';
+import { generate, type GenerateResult } from '../schedule/generator';
+import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
+import { shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
 
 // 2024-01-01 is a Monday: used only to ask Intl for localized weekday names.
 const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
 
+interface Preview {
+  result: GenerateResult;
+  changed: Set<string>;
+  totals: Record<string, number>;
+}
+
 export function CalendarPage() {
   const t = useT();
+  const { state, save } = useData();
+  if (state.status === 'loading') return <p>{t.common.loading}</p>;
+  if (state.status === 'error') {
+    return (
+      <p role="alert" className="error">
+        {t.employees.loadError}
+      </p>
+    );
+  }
+  return <CalendarView data={state.data} save={save} />;
+}
+
+function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<void> }) {
+  const t = useT();
   const locale = useLocale();
+  const { can } = usePermissions();
+  const canEdit = can('calendar:edit');
   const today = useMemo(() => new Date(), []);
   const currentRef = useRef<HTMLElement>(null);
 
-  const months = useMemo(() => {
-    const end = new Date(today.getFullYear(), today.getMonth() + calendarMonthsAhead, 1);
-    return monthsBetween(calendarStart, { year: end.getFullYear(), month: end.getMonth() });
-  }, [today]);
+  const [selected, setSelected] = useState<Shift | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [preview, setPreview] = useState<Preview | null>(null);
+
+  const months = useMemo(() => calendarMonths(today), [today]);
+  const range = useMemo(() => calendarRange(today), [today]);
   // The current month, or the first one if today is before the calendar start.
-  const focus = useMemo(() => {
-    const current = months.find((m) => m.year === today.getFullYear() && m.month === today.getMonth());
-    return current ?? months[0];
-  }, [months, today]);
+  const focus = useMemo(
+    () => months.find((m) => m.year === today.getFullYear() && m.month === today.getMonth()) ?? months[0],
+    [months, today],
+  );
   const monthName = useMemo(() => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }), [locale]);
   const weekdays = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
     return Array.from({ length: 7 }, (_, i) => fmt.format(mondayReference(i)));
   }, [locale]);
+  const employeesById = useMemo(() => new Map(data.employees.map((e) => [e.id, e])), [data.employees]);
+
+  // While previewing, show the proposed schedule instead of the saved one.
+  const assignments: Record<string, Assignment> = preview ? preview.result.assignments : data.assignments;
+
+  // Rule warnings for manual assignments (allowed, but flagged).
+  const warnings = useMemo(() => {
+    const view: Data = { ...data, assignments };
+    const result = new Map<string, ReasonCode[]>();
+    for (const [key, a] of Object.entries(assignments)) {
+      if (a.source !== 'manual') continue;
+      const [date, part] = key.split(':') as [string, DayPart];
+      const broken = brokenRules(view, { date, part }, a.employeeId);
+      if (broken.length > 0) result.set(key, broken);
+    }
+    return result;
+  }, [data, assignments]);
 
   const focusMonth = (smooth: boolean) => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -36,9 +87,48 @@ export function CalendarPage() {
     focusMonth(false);
   }, []);
 
+  function showPreview(startAt: Shift) {
+    const result = generate({ data, range, startAt });
+    const before: Record<string, Assignment> = data.assignments;
+    const after: Record<string, Assignment> = result.assignments;
+    const changed = new Set<string>();
+    for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+      if (before[key]?.employeeId !== after[key]?.employeeId) changed.add(key);
+    }
+    const totals: Record<string, number> = {};
+    for (const a of Object.values(result.assignments)) totals[a.employeeId] = (totals[a.employeeId] ?? 0) + 1;
+    setPreview({ result, changed, totals });
+    setRegenerating(false);
+  }
+
+  async function applyPreview() {
+    if (!preview) return;
+    await save({ ...data, assignments: preview.result.assignments });
+    setPreview(null);
+  }
+
   return (
     <section>
-      <h1>{t.calendar.title}</h1>
+      <div className="page-header">
+        <h1>{t.calendar.title}</h1>
+        {canEdit && (
+          <button type="button" className="button button--primary" disabled={preview !== null} onClick={() => setRegenerating(true)}>
+            {t.calendar.regenerate}
+          </button>
+        )}
+      </div>
+
+      {preview && (
+        <PreviewBar
+          data={data}
+          changed={preview.changed.size}
+          unfilled={preview.result.unfilled}
+          totals={preview.totals}
+          onApply={() => void applyPreview()}
+          onDiscard={() => setPreview(null)}
+        />
+      )}
+
       {months.map(({ year, month }) => {
         const isFocus = year === focus?.year && month === focus.month;
         const grid = monthGrid(year, month);
@@ -55,30 +145,57 @@ export function CalendarPage() {
               </div>
               {grid.weeks.map((week, w) => (
                 <div key={w} className="week" role="row">
-                  {week.map((cell, d) =>
-                    cell ? (
+                  {week.map((cell, d) => {
+                    if (!cell) return <div key={d} className="day day--empty" role="gridcell" />;
+                    const date = toIsoDate(cell.date);
+                    return (
                       <div key={d} className={isSameDay(cell.date, today) ? 'day day--today' : 'day'} role="gridcell">
                         <span className="day__number">{cell.day}</span>
-                        <div className="slot slot--day">
-                          <span className="slot__label">{t.calendar.day}</span>
-                        </div>
-                        <div className="slot slot--night">
-                          <span className="slot__label">{t.calendar.night}</span>
-                        </div>
+                        {(['day', 'night'] as const).map((part) => {
+                          const shift: Shift = { date, part };
+                          const key = shiftKey(shift);
+                          const assignment = assignments[key];
+                          return (
+                            <ShiftTile
+                              key={part}
+                              part={part}
+                              assignment={assignment}
+                              employee={assignment ? employeesById.get(assignment.employeeId) : undefined}
+                              closed={companyClosedReason(data, shift) !== null}
+                              warnings={warnings.get(key) ?? []}
+                              changed={preview?.changed.has(key) ?? false}
+                              onSelect={canEdit && !preview ? () => setSelected(shift) : undefined}
+                            />
+                          );
+                        })}
                       </div>
-                    ) : (
-                      <div key={d} className="day day--empty" role="gridcell" />
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
               ))}
             </div>
           </section>
         );
       })}
+
       <button type="button" className="button button--primary fab" onClick={() => focusMonth(true)}>
         {t.calendar.currentMonth}
       </button>
+
+      {canEdit && selected && (
+        <ShiftDialog
+          shift={selected}
+          data={data}
+          onSave={async (next) => {
+            await save(next);
+            setSelected(null);
+          }}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {canEdit && regenerating && (
+        <RegenerateDialog defaultStart={tomorrowDay(today)} onPreview={showPreview} onClose={() => setRegenerating(false)} />
+      )}
     </section>
   );
 }
