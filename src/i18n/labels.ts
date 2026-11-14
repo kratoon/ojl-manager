@@ -33,10 +33,6 @@ const cs = {
     close: 'Zavřít',
     noAccess: 'Nemáte oprávnění zobrazit tuto stránku.',
   },
-  mode: {
-    view: 'Zobrazení',
-    edit: 'Úpravy',
-  },
   home: {
     welcome: 'Vítejte v aplikaci OJL Manager.',
   },
@@ -75,10 +71,6 @@ const en: Labels = {
     actions: 'Actions',
     close: 'Close',
     noAccess: 'You do not have permission to view this page.',
-  },
-  mode: {
-    view: 'View',
-    edit: 'Edit',
   },
   home: {
     welcome: 'Welcome to OJL Manager.',

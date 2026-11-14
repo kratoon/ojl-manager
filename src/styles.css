@@ -55,20 +55,6 @@ h1 {
   white-space: nowrap;
 }
 
-.header__right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.badge {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--blue-light);
-  border: 1px solid var(--blue-mid);
-  border-radius: 999px;
-}
-
 .content {
   max-width: 72rem;
   margin: 0 auto;
