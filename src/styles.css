@@ -575,3 +575,66 @@ h1 {
   z-index: 15;
   box-shadow: 0 4px 16px rgb(13 16 51 / 0.25);
 }
+
+/* ---------- employee form (scheduling fields) ---------- */
+.shift-field {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shift-field input,
+.shift-field select,
+.form input[type='number'] {
+  padding: 0.625rem 0.75rem;
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--blue-light);
+  border-radius: 0.375rem;
+}
+
+.shift-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.check input {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+}
+
+.vacations {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.vacations legend {
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.vacation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.vacation .button--danger {
+  align-self: flex-start;
+}

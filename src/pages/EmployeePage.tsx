@@ -39,7 +39,7 @@ export function EmployeePage({ id }: { id: string }) {
         <>
           <h1>{t.employees.editTitle}</h1>
           <div className="card">
-            <EmployeeForm key={employee.id} employee={employee} onSubmit={submit} onCancel={backToList} />
+            <EmployeeForm key={employee.id} extended employee={employee} onSubmit={submit} onCancel={backToList} />
           </div>
         </>
       ) : (
