@@ -1,0 +1,6 @@
+{
+  "employees": [
+    { "id": "00000000-0000-4000-8000-000000000001", "firstName": "Jana", "lastName": "Nováková" },
+    { "id": "00000000-0000-4000-8000-000000000002", "firstName": "Petr", "lastName": "Svoboda" }
+  ]
+}
