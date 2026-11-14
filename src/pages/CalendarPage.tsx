@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calendarMonths, calendarRange, tomorrowDay } from '../calendar/range';
 import { isSameDay, monthGrid } from '../calendar/dates';
+import { PdfDialog } from '../components/calendar/PdfDialog';
 import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
@@ -14,6 +15,8 @@ import { compareEmployees, generate, type GenerateResult } from '../schedule/gen
 import { pairingProblems } from '../schedule/pattern';
 import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
 import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
+
+const monthKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
 
 // 2024-01-01 is a Monday: used only to ask Intl for localized weekday names.
 const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
@@ -71,6 +74,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const [selected, setSelected] = useState<Shift | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   const months = useMemo(() => calendarMonths(today), [today]);
   const range = useMemo(() => calendarRange(today), [today]);
@@ -133,6 +137,24 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     focusMonth(false);
   }, []);
 
+  async function exportPdf(keys: string[]) {
+    const chosen = months.filter((m) => keys.includes(monthKey(m.year, m.month)));
+    if (chosen.length === 0) return;
+    // Loaded on demand: the PDF library and fonts are not part of the initial bundle.
+    const [{ buildCalendarPdf }, { loadPdfFonts }] = await Promise.all([import('../export/calendarPdf'), import('../export/fonts')]);
+    const bytes = await buildCalendarPdf({ months: chosen, data, locale, labels: t, today }, await loadPdfFonts());
+    const first = chosen[0];
+    const last = chosen[chosen.length - 1];
+    const stamp = (m: { year: number; month: number } | undefined) => (m ? monthKey(m.year, m.month) : '');
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${t.calendar.pdfFileName}_${stamp(first)}_${stamp(last)}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setPdfOpen(false);
+  }
+
   function showPreview(startAt: Shift) {
     // Never regenerate before tomorrow: today and the past are only changed by hand.
     if (compareShifts(startAt, tomorrowDay(today)) < 0) return;
@@ -158,11 +180,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     <section>
       <div className="page-header">
         <h1>{t.calendar.title}</h1>
-        {canEdit && (
-          <button type="button" className="button button--primary" disabled={preview !== null} onClick={() => setRegenerating(true)}>
-            {t.calendar.regenerate}
-          </button>
-        )}
       </div>
 
       {preview && (
@@ -238,9 +255,19 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         );
       })}
 
-      <button type="button" className="button button--primary fab" onClick={() => focusMonth(true)}>
-        {t.calendar.currentMonth}
-      </button>
+      <div className="fab-bar">
+        {canEdit && (
+          <button type="button" className="button" disabled={preview !== null} onClick={() => setRegenerating(true)}>
+            {t.calendar.regenerate}
+          </button>
+        )}
+        <button type="button" className="button" disabled={preview !== null} onClick={() => setPdfOpen(true)}>
+          {t.calendar.pdfButton}
+        </button>
+        <button type="button" className="button button--primary" onClick={() => focusMonth(true)}>
+          {t.calendar.currentMonth}
+        </button>
+      </div>
 
       {canEdit && selected && (
         <ShiftDialog
@@ -251,6 +278,16 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
             setSelected(null);
           }}
           onClose={() => setSelected(null)}
+        />
+      )}
+      {pdfOpen && (
+        <PdfDialog
+          months={months.map(({ year, month }) => ({ key: monthKey(year, month), label: monthName.format(new Date(year, month, 1)) }))}
+          defaultSelected={months
+            .filter((m) => m.year > (focus?.year ?? 0) || (m.year === focus?.year && m.month >= (focus?.month ?? 0)))
+            .map((m) => monthKey(m.year, m.month))}
+          onDownload={exportPdf}
+          onClose={() => setPdfOpen(false)}
         />
       )}
       {canEdit && regenerating && (

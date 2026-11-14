@@ -8,5 +8,7 @@ import { localDataPlugin } from './tools/dataPlugin';
 export default defineConfig({
   base: process.env.BASE_PATH ?? './',
   plugins: [react(), localDataPlugin()],
+  // The PDF export (pdf-lib + fontkit) is loaded on demand, so its chunk is big but not on the first load.
+  build: { chunkSizeWarningLimit: 800 },
   server: { host: '127.0.0.1' },
 });
