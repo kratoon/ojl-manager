@@ -1,6 +1,7 @@
 import type { Employee } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import type { Unfilled } from '../../schedule/generator';
+import { MoonIcon, SunIcon } from './icons';
 
 export interface ShiftCounts {
   day: number;
@@ -46,22 +47,30 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
         <summary>{t.calendar.previewDetails}</summary>
         <div className="preview__details">
           <h3>{t.calendar.previewTotals}</h3>
+          <p className="preview__legend">
+            <span className="preview__legend-item">
+              <SunIcon />
+              {t.calendar.day}
+            </span>
+            {' / '}
+            <span className="preview__legend-item">
+              <MoonIcon />
+              {t.calendar.night}
+            </span>
+            {' / '}
+            <strong>{t.calendar.previewTotal}</strong>
+          </p>
           <div className="preview__table-wrap">
             <table className="table preview__table">
               <thead>
                 <tr>
-                  <th scope="col" rowSpan={2} className="preview__month">
+                  <th scope="col" className="preview__month">
                     {t.calendar.previewMonth}
                   </th>
                   {employees.map((e) => (
-                    <th key={e.id} scope="colgroup" colSpan={3} className="group" title={`${e.firstName} ${e.lastName}`}>
+                    <th key={e.id} scope="col" className="num" title={`${e.firstName} ${e.lastName}`}>
                       {e.lastName}
                     </th>
-                  ))}
-                </tr>
-                <tr>
-                  {employees.map((e) => (
-                    <SubHeaders key={e.id} />
                   ))}
                 </tr>
               </thead>
@@ -74,7 +83,10 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
                     {employees.map((e) => {
                       const c = m.counts[e.id] ?? { day: 0, night: 0 };
                       return (
-                        <EmployeeCells key={e.id} day={c.day} night={c.night} />
+                        <td key={e.id} className="num" title={`${t.calendar.day}/${t.calendar.night}/${t.calendar.previewTotal}`}>
+                          {`${c.day}/${c.night}/`}
+                          <strong>{c.day + c.night}</strong>
+                        </td>
                       );
                     })}
                   </tr>
@@ -97,32 +109,5 @@ export function PreviewBar({ employees, months, changed, unfilled, onApply, onDi
         </div>
       </details>
     </aside>
-  );
-}
-
-function SubHeaders() {
-  const t = useT();
-  return (
-    <>
-      <th scope="col" className="num sub">
-        {t.calendar.day}
-      </th>
-      <th scope="col" className="num sub">
-        {t.calendar.night}
-      </th>
-      <th scope="col" className="num sub sub--total">
-        {t.calendar.previewTotal}
-      </th>
-    </>
-  );
-}
-
-function EmployeeCells({ day, night }: ShiftCounts) {
-  return (
-    <>
-      <td className="num">{day}</td>
-      <td className="num">{night}</td>
-      <td className="num num--total">{day + night}</td>
-    </>
   );
 }

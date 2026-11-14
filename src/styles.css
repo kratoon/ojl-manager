@@ -864,22 +864,6 @@ select:disabled {
   z-index: 1;
 }
 
-/* Second header row sits under the first one. */
-.preview__table thead tr:nth-child(2) th {
-  top: 1.75rem;
-  font-weight: 400;
-}
-
-.preview__table th.group {
-  text-align: center;
-  border-left: 1px solid #d5d7e8;
-}
-
-.preview__table .sub--total,
-.preview__table .num--total {
-  font-weight: 600;
-}
-
 /* Every body cell in a row, the month name included, gets the same divider. */
 .preview__table tbody tr + tr > * {
   border-top: 1px solid var(--border);
@@ -912,10 +896,6 @@ select:disabled {
 .preview__table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-.preview__table tbody td:nth-child(3n + 2) {
-  border-left: 1px solid var(--border);
 }
 
 /* ---------- calendar: compact tiles, outside dates ---------- */
@@ -989,4 +969,28 @@ select:disabled {
   .slot__label {
     display: none;
   }
+}
+
+.preview__legend {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.preview__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+
+.preview__table th.num,
+.preview__table td.num {
+  text-align: center;
+}
+
+/* Sticky cells lose their collapsed borders, so the month cell draws its divider as a shadow. */
+.preview__table tbody tr + tr > th {
+  border-top: 0;
+  box-shadow: inset 0 1px 0 var(--border);
 }
