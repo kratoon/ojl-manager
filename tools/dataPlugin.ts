@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
 import { join } from 'node:path';
 import type { Plugin } from 'vite';
-import { dataSchema, emptyData } from '../src/data/schema';
+import { dataSchema, emptyData } from '../src/data/schema.ts';
 
 const MAX_BYTES = 1_000_000;
 
