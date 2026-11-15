@@ -453,7 +453,10 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem;
+  box-sizing: border-box;
+  align-self: stretch;
+  aspect-ratio: 1;
+  padding: 0 0.75rem;
 }
 
 .month__title {
