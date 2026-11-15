@@ -765,9 +765,23 @@ button.slot:focus-visible {
   border: 1px solid var(--blue-mid);
   border-radius: 0.5rem;
   box-shadow: 0 4px 16px rgb(13 16 51 / 0.12);
+  /* Never taller than the window: the summary stays put and the details scroll. */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 10.25rem);
+  max-height: calc(100dvh - 10.25rem);
+}
+
+@media (max-width: 40rem) {
+  /* The floating buttons wrap into two rows here. */
+  .preview {
+    max-height: calc(100vh - 14rem);
+    max-height: calc(100dvh - 14rem);
+  }
 }
 
 .preview__summary {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -793,6 +807,12 @@ button.slot:focus-visible {
 
 .preview details {
   margin-top: 0.5rem;
+  min-height: 0;
+}
+
+.preview details[open] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .warning {
@@ -1255,4 +1275,10 @@ a[href] {
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.conflict__locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }

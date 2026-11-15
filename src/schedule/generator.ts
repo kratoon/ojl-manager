@@ -173,14 +173,24 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     }
   }
 
-  // Stable output: sorted shifts, and employees within a shift in the fixed employee order.
+  // Stable output: sorted shifts. Within a shift every seat stays where it was, and a freed seat is taken by
+  // the replacement; a shift that had nobody lists its employees in the fixed employee order.
+  const rank = (a: Assignment) => employeeRank.get(a.employeeId) ?? 1e9;
+  const inSeatOrder = (list: Assignment[], before: Assignment[] | undefined): Assignment[] => {
+    const byRank = [...list].sort((a, b) => rank(a) - rank(b));
+    if (!before || before.length === 0) return byRank;
+    // Take each old seat's assignment out of the pool (a temporary worker can appear more than once).
+    const pool = [...byRank];
+    const seats = before.map((old) => {
+      const at = pool.findIndex((a) => a.employeeId === old.employeeId);
+      return at === -1 ? undefined : pool.splice(at, 1)[0];
+    });
+    return [...seats.map((seat) => seat ?? pool.shift()), ...pool].filter((a): a is Assignment => a !== undefined);
+  };
   const assignments = Object.fromEntries(
     [...kept.entries()]
       .sort(([a], [b]) => byString(a, b))
-      .map(([key, list]) => [
-        key,
-        [...list].sort((a, b) => (employeeRank.get(a.employeeId) ?? 1e9) - (employeeRank.get(b.employeeId) ?? 1e9)),
-      ]),
+      .map(([key, list]) => [key, inSeatOrder(list, data.assignments[key])]),
   ) as Record<ShiftKey, Assignment[]>;
   return { assignments, unfilled };
 }

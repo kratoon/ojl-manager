@@ -4,7 +4,7 @@ import { isSameDay, monthGrid } from '../calendar/dates';
 import { PdfDialog } from '../components/calendar/PdfDialog';
 import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
-import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
+import { ConflictsDialog } from '../components/calendar/ConflictsDialog';
 import { SettingsDialog } from '../components/calendar/SettingsDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { LockIcon, UnlockIcon } from '../components/calendar/icons';
@@ -14,10 +14,11 @@ import { TEMPORARY_ID, type Assignment, type Data, type Employee } from '../data
 import { useLocale, useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
 import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
+import { conflictIndex, findConflicts } from '../schedule/conflicts';
 import { isMonthLocked, setMonthLock } from '../schedule/locks';
 import { pairingProblems } from '../schedule/pattern';
-import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
-import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
+import { companyClosedReason } from '../schedule/rules';
+import { compareShifts, shiftKey, toIsoDate, type Shift } from '../schedule/shift';
 
 const monthKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
 
@@ -27,6 +28,8 @@ const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
 interface Preview {
   result: GenerateResult;
   changed: Set<string>;
+  /** The start the preview was made with, so it can be tweaked and run again. */
+  startAt: Shift;
 }
 
 export function CalendarPage() {
@@ -87,10 +90,10 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const currentRef = useRef<HTMLElement>(null);
 
   const [selected, setSelected] = useState<Shift | null>(null);
-  const [regenerating, setRegenerating] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [conflictsOpen, setConflictsOpen] = useState(false);
 
   const months = useMemo(() => calendarMonths(today), [today]);
   const range = useMemo(() => calendarRange(today), [today]);
@@ -111,20 +114,10 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const seats = data.company.seatsPerShift;
   const pairing = useMemo(() => pairingProblems(data.employees), [data.employees]);
 
-  // Rule warnings for manual assignments (allowed, but flagged).
-  const warnings = useMemo(() => {
-    const view: Data = { ...data, assignments };
-    const result = new Map<string, ReasonCode[]>(); // key: "<shift key>|<employee id>"
-    for (const [key, list] of Object.entries(assignments)) {
-      const [date, part] = key.split(':') as [string, DayPart];
-      for (const a of list) {
-        if (a.source !== 'manual') continue;
-        const broken = brokenRules(view, { date, part }, a.employeeId);
-        if (broken.length > 0) result.set(`${key}|${a.employeeId}`, broken);
-      }
-    }
-    return result;
-  }, [data, assignments]);
+  // Everything that breaks a rule, locked or not (a locked one is allowed but flagged; an automatic one is
+  // stale, for example after a vacation was added, and regenerating fixes it).
+  const conflicts = useMemo(() => findConflicts({ ...data, assignments }), [data, assignments]);
+  const warnings = useMemo(() => conflictIndex(conflicts), [conflicts]);
 
   // Day and night shifts per employee for each month (from the saved or the previewed schedule).
   const monthlyCounts = useMemo(() => {
@@ -183,8 +176,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
       if (people(before[key]) !== people(after[key])) changed.add(key);
     }
-    setPreview({ result, changed });
-    setRegenerating(false);
+    setPreview({ result, changed, startAt });
   }
 
   async function applyPreview() {
@@ -199,6 +191,12 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         <h1>{t.calendar.title}</h1>
       </div>
 
+      {canEdit && !pairing.ok && (
+        <p role="alert" className="error">
+          {`${t.calendar.pairingRequired} ${pairing.unpaired.map((e) => e.name).join(', ')}`}
+        </p>
+      )}
+
       {preview && (
         <PreviewBar
           employees={sortedEmployees}
@@ -208,6 +206,12 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           })}
           changed={preview.changed.size}
           unfilled={preview.result.unfilled}
+          conflicts={conflicts}
+          startAt={preview.startAt}
+          minStart={tomorrowDay(today)}
+          canRegenerate={pairing.ok}
+          today={toIsoDate(today)}
+          onRegenerate={showPreview}
           onApply={() => void applyPreview()}
           onDiscard={() => setPreview(null)}
         />
@@ -283,10 +287,19 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
 
       <div className="fab-bar">
         {canEdit && (
-          <button type="button" className="button" disabled={preview !== null} onClick={() => setRegenerating(true)}>
+          <button
+            type="button"
+            className="button"
+            disabled={preview !== null || !pairing.ok}
+            title={pairing.ok ? undefined : t.calendar.pairingRequired}
+            onClick={() => showPreview(tomorrowDay(today))}
+          >
             {t.calendar.regenerate}
           </button>
         )}
+        <button type="button" className="button" disabled={preview !== null} onClick={() => setConflictsOpen(true)}>
+          {`${t.conflicts.button} (${conflicts.length})`}
+        </button>
         {canEditSettings && (
           <button type="button" className="button" disabled={preview !== null} onClick={() => setSettingsOpen(true)}>
             {t.settings.button}
@@ -321,6 +334,22 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           onClose={() => setSettingsOpen(false)}
         />
       )}
+      {conflictsOpen && (
+        <ConflictsDialog
+          conflicts={conflicts}
+          employees={employeesById}
+          today={toIsoDate(today)}
+          onOpenShift={
+            canEdit
+              ? (shift) => {
+                  setConflictsOpen(false);
+                  setSelected(shift);
+                }
+              : undefined
+          }
+          onClose={() => setConflictsOpen(false)}
+        />
+      )}
       {pdfOpen && (
         <PdfDialog
           months={months.map(({ year, month }) => ({ key: monthKey(year, month), label: monthName.format(new Date(year, month, 1)) }))}
@@ -330,9 +359,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           onDownload={exportPdf}
           onClose={() => setPdfOpen(false)}
         />
-      )}
-      {canEdit && regenerating && (
-        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} onPreview={showPreview} onClose={() => setRegenerating(false)} />
       )}
     </section>
   );
