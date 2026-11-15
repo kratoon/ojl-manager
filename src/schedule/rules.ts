@@ -159,7 +159,12 @@ const patternRule: Rule = {
     if (!pattern) return null;
     const on = onPattern(pattern, employee.id, shift);
     if (on === null) return null;
-    if (!on && compensating) return null;
+    if (!on && compensating) {
+      // Only on shifts away from their own rotation: next to one of their own shifts a pick would just swap
+      // places with the partner pair (no extra shift made up) and split the pairs for good.
+      const nearOwn = [previousShift(shift), nextShift(shift)].some((s) => onPattern(pattern, employee.id, s));
+      if (!nearOwn) return null;
+    }
     return { score: on ? 10 : 1, reason: 'pattern' };
   },
 };

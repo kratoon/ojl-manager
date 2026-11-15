@@ -254,9 +254,9 @@ describe('compensation breaks the pattern and the pair returns to it', () => {
     expect(count(on, 'e1', '2026-11-23', '2027-03-31')).toBeGreaterThan(count(off, 'e1', '2026-11-23', '2027-03-31'));
   });
 
-  it('is back on the pattern for the last weeks', () => {
+  it('is back on the pattern from January on, with the pairs together again', () => {
     const { assignments } = generate({ data: make(true), range: long, startAt: long.from });
-    for (const shift of shiftsBetween(sh('2027-03-15'), long.to)) {
+    for (const shift of shiftsBetween(sh('2027-01-04'), long.to)) {
       const position = [0, 1, 2, 3].find((p) => patternWorks(p, shift, anchor)) as number;
       const expected = [`e${2 * position + 1}`, `e${2 * position + 2}`];
       expect((assignments[shiftKey(shift)] ?? []).map((a) => a.employeeId).sort(), shiftKey(shift)).toEqual(expected);
