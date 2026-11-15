@@ -811,8 +811,12 @@ button.slot:focus-visible {
 }
 
 .preview details[open] {
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  /* A little room so the scrollbar never sits on the content. */
+  padding-right: 0.5rem;
 }
 
 .warning {
@@ -979,8 +983,10 @@ select:disabled {
 
 /* ---------- preview: monthly table ---------- */
 .preview__table-wrap {
-  max-height: 20rem;
-  overflow: auto;
+  /* Only sideways here: the details part of the preview is the one vertical scroller. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
 }
@@ -993,12 +999,6 @@ select:disabled {
 .preview__table td {
   padding: 0.25rem 0.625rem;
   white-space: nowrap;
-}
-
-.preview__table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 
 /* Every body cell in a row, the month name included, gets the same divider. */
