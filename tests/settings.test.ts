@@ -32,6 +32,7 @@ describe('validateNumber', () => {
     const company = companySchema.parse({});
     expect(company.pattern.weight).toBe(settingRanges.patternWeight.fallback);
     expect(company.fairnessWeight).toBe(settingRanges.fairnessWeight.fallback);
+    expect(company.kindBalanceWeight).toBe(settingRanges.kindBalanceWeight.fallback);
     expect(company.fairnessCap).toBe(settingRanges.fairnessCap.fallback);
     expect(company.pattern.compensationGap).toBe(settingRanges.compensationGap.fallback);
     for (const range of Object.values(settingRanges)) {

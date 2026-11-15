@@ -19,7 +19,8 @@ export type ReasonCode =
   | 'day-night-mix'
   | 'pair-limit'
   | 'pattern'
-  | 'fairness';
+  | 'fairness'
+  | 'kind-balance';
 
 export interface Verdict {
   /** 0 = cannot be assigned, 1 to 10 = allowed, higher is more preferred. */
@@ -37,6 +38,8 @@ export interface RuleContext {
   pattern?: PatternModel;
   /** Expected shifts by now minus shifts worked so far (ADR-aaa3ccd). Positive = behind. */
   gap: number;
+  /** Same as `gap`, but only for shifts of this shift's kind (day or night). Missing counts as even. */
+  kindGap?: number;
   /**
    * The employee is making up missed shifts (ADR-a1cb97d): they started when they fell far enough behind the
    * others and continue until the gap is closed, so the rotation is not held against them meanwhile.
@@ -147,6 +150,17 @@ const fairnessRule: Rule = {
 };
 
 /**
+ * Day/night balance: fairness counted per kind, clamp(5 + kindGap, 1, 10). Totals can look even while one
+ * employee works mostly nights; this prefers the kind an employee is behind on and never blocks anyone.
+ * The weight stays below the pattern weight so the rotation still wins when nobody needs compensation.
+ */
+const kindBalanceRule: Rule = {
+  id: 'kind-balance',
+  weight: (data) => data.company.kindBalanceWeight,
+  evaluate: ({ kindGap = 0 }) => ({ score: Math.min(10, Math.max(1, NEUTRAL_SCORE + kindGap)), reason: 'kind-balance' }),
+};
+
+/**
  * Long/short week rotation as the strongest soft preference: 10 when the employee's pair is on pattern for
  * this shift, 1 otherwise. No opinion without a pattern or for an employee without a position. An employee
  * who is compensating (far behind the others after PTO) gets no opinion off pattern, so fairness decides and
@@ -174,6 +188,7 @@ export const defaultRules: Rule[] = [
   closedRule,
   fairnessRule,
   forbiddenRule,
+  kindBalanceRule,
   maxInRowRule,
   noMixingRule,
   patternRule,

@@ -26,6 +26,7 @@ const cs = {
     'pair-limit': 'více než jedna smíšená dvojice',
     pattern: 'vzorec dlouhý/krátký týden',
     fairness: 'spravedlivé rozdělení',
+    'kind-balance': 'vyrovnání denních a nočních směn',
   },
   rules: {
     title: 'Firemní pravidla',
@@ -64,9 +65,14 @@ const cs = {
     fairnessWeightHelp: 'Jak silně generátor vyrovnává celkový počet směn mezi zaměstnanci, například po dovolené nebo nemoci.',
     fairnessWeightScale:
       'Vyšší číslo: vyrovnanější počty směn, ale častější odchylky od vzorce. Nižší číslo: pevnější vzorec, větší rozdíly v počtech.',
+    kindBalanceWeight: 'Váha vyrovnání denních a nočních směn',
+    kindBalanceWeightHelp:
+      'Počty směn se vyrovnávají zvlášť pro denní a zvlášť pro noční. Díky tomu nedostane jeden zaměstnanec samé noci, i když má celkový počet směn vyrovnaný.',
+    kindBalanceWeightScale:
+      'Vyšší číslo: přednost dostane ten, komu chybí směny daného druhu (den nebo noc). Nižší číslo: druh směny se téměř neřeší. Doporučeno méně než váha vzorce, aby vzorec dál vyhrával.',
     fairnessCap: 'Max. náskok zaměstnance před očekávaným počtem směn',
     fairnessCapHelp:
-      'Zaměstnanec, který je o tolik směn nad očekávaným počtem, dostane další směnu, jen když nikdo jiný nemůže.',
+      'Zaměstnanec, který je o tolik směn nad očekávaným počtem (celkem, nebo v denních či nočních), dostane další směnu, jen když nikdo jiný nemůže.',
     fairnessCapScale:
       'Počet směn. 0: nikdo nesmí být nad očekávaným počtem. 2: malá rezerva (výchozí). 10: omezení je prakticky vypnuté.',
     compensationGap: 'Náskok ostatních, od kterého se kompenzuje',
@@ -200,6 +206,7 @@ const en: Labels = {
     'pair-limit': 'more than one mixed pair',
     pattern: 'long/short week pattern',
     fairness: 'fair distribution',
+    'kind-balance': 'day/night balance',
   },
   rules: {
     title: 'Company rules',
@@ -238,9 +245,14 @@ const en: Labels = {
     fairnessWeightHelp: 'How strongly the generator evens out the total number of shifts between employees, for example after PTO or sick days.',
     fairnessWeightScale:
       'Higher: more even shift counts but more deviations from the rotation. Lower: a firmer rotation, bigger differences in counts.',
+    kindBalanceWeight: 'Weight of day/night balance',
+    kindBalanceWeightHelp:
+      'Shift counts are evened out separately for day shifts and for night shifts. This stops one employee from getting only nights even when their total is even.',
+    kindBalanceWeightScale:
+      'Higher: whoever is short of shifts of this kind (day or night) goes first. Lower: the kind of shift hardly matters. Keep it below the pattern weight so the rotation still wins.',
     fairnessCap: 'Max lead of an employee over the expected number of shifts',
     fairnessCapHelp:
-      'An employee who is this many shifts above the expected number only gets another shift when nobody else can take it.',
+      'An employee who is this many shifts above the expected number (in total, or in day or night shifts) only gets another shift when nobody else can take it.',
     fairnessCapScale:
       'Number of shifts. 0: nobody may be above the expected number. 2: a small margin (default). 10: the limit is practically off.',
     compensationGap: 'Gap behind the others that starts compensation',

@@ -14,6 +14,7 @@ export interface NumberRange {
 export const settingRanges = {
   patternWeight: { min: 0.5, max: 10, step: 0.5, fallback: 4 },
   fairnessWeight: { min: 0.5, max: 10, step: 0.5, fallback: 2 },
+  kindBalanceWeight: { min: 0.5, max: 10, step: 0.5, fallback: 1 },
   fairnessCap: { min: 0, max: 10, step: 0.5, fallback: 2 },
   compensationGap: { min: 1, max: 10, step: 0.5, fallback: 4 },
 } as const satisfies Record<string, NumberRange>;
