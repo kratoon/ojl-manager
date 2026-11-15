@@ -70,7 +70,7 @@ function MonthLockButton({ locked, empty, onToggle }: { locked: boolean; empty: 
   const t = useT();
   const label = locked ? t.calendar.unlockMonth : t.calendar.lockMonth;
   return (
-    <button type="button" className="button button--icon" title={label} aria-label={label} disabled={empty} onClick={() => onToggle(!locked)}>
+    <button type="button" className="button button--glyph" title={label} aria-label={label} disabled={empty} onClick={() => onToggle(!locked)}>
       {locked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
     </button>
   );

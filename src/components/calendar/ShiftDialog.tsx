@@ -6,6 +6,7 @@ import { clearShift, unlockShift } from '../../schedule/locks';
 import { brokenRules } from '../../schedule/rules';
 import { shiftKey, type Shift } from '../../schedule/shift';
 import { Modal } from '../Modal';
+import { LockIcon, UnlockIcon } from './icons';
 
 interface ShiftDialogProps {
   shift: Shift;
@@ -176,8 +177,14 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
         )}
         <div className="form__actions">
           {current.some((a) => a.source === 'manual') && (
-            <button type="button" className="button" onClick={() => void commit(unlockShift(data.assignments, key))}>
-              {t.calendar.unlockShift}
+            <button
+              type="button"
+              className="button button--glyph"
+              title={t.calendar.unlockShift}
+              aria-label={t.calendar.unlockShift}
+              onClick={() => void commit(unlockShift(data.assignments, key))}
+            >
+              <UnlockIcon size={18} />
             </button>
           )}
           {current.length > 0 && (
@@ -188,9 +195,15 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           <button type="button" className="button" onClick={onClose}>
             {t.common.cancel}
           </button>
-          <button type="submit" className="button button--primary">
-            {chosen.length > 0 ? t.calendar.lockAction : t.common.save}
-          </button>
+          {chosen.length > 0 ? (
+            <button type="submit" className="button button--primary button--glyph" title={t.calendar.lockAction} aria-label={t.calendar.lockAction}>
+              <LockIcon size={18} />
+            </button>
+          ) : (
+            <button type="submit" className="button button--primary">
+              {t.common.save}
+            </button>
+          )}
         </div>
       </form>
     </Modal>
