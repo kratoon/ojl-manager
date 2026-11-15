@@ -74,6 +74,12 @@ export function PreviewBar({ employees, months, changed, unfilled, conflicts, st
             }}
           >
             <ShiftField label={t.calendar.regenerateStart} value={start} onChange={setStart} minDate={minStart.date} />
+            <p className="hint">{t.calendar.regenerateHint}</p>
+            {start && !validStart && (
+              <p role="alert" className="error">
+                {t.calendar.regenerateTooEarly}
+              </p>
+            )}
             <div className="form__actions">
               <button type="submit" className="button button--primary" disabled={!validStart || !canRegenerate}>
                 {t.calendar.previewRegenerate}

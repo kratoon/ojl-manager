@@ -5,7 +5,6 @@ import { PdfDialog } from '../components/calendar/PdfDialog';
 import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { ConflictsDialog } from '../components/calendar/ConflictsDialog';
-import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { SettingsDialog } from '../components/calendar/SettingsDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { LockIcon, UnlockIcon } from '../components/calendar/icons';
@@ -91,7 +90,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const currentRef = useRef<HTMLElement>(null);
 
   const [selected, setSelected] = useState<Shift | null>(null);
-  const [regenerating, setRegenerating] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -179,7 +177,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
       if (people(before[key]) !== people(after[key])) changed.add(key);
     }
     setPreview({ result, changed, startAt });
-    setRegenerating(false);
   }
 
   async function applyPreview() {
@@ -193,6 +190,12 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
       <div className="page-header">
         <h1>{t.calendar.title}</h1>
       </div>
+
+      {canEdit && !pairing.ok && (
+        <p role="alert" className="error">
+          {`${t.calendar.pairingRequired} ${pairing.unpaired.map((e) => e.name).join(', ')}`}
+        </p>
+      )}
 
       {preview && (
         <PreviewBar
@@ -284,7 +287,13 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
 
       <div className="fab-bar">
         {canEdit && (
-          <button type="button" className="button" disabled={preview !== null} onClick={() => setRegenerating(true)}>
+          <button
+            type="button"
+            className="button"
+            disabled={preview !== null || !pairing.ok}
+            title={pairing.ok ? undefined : t.calendar.pairingRequired}
+            onClick={() => showPreview(tomorrowDay(today))}
+          >
             {t.calendar.regenerate}
           </button>
         )}
@@ -350,9 +359,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           onDownload={exportPdf}
           onClose={() => setPdfOpen(false)}
         />
-      )}
-      {canEdit && regenerating && (
-        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} onPreview={showPreview} onClose={() => setRegenerating(false)} />
       )}
     </section>
   );

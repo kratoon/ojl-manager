@@ -42,6 +42,13 @@ describe('preview bar', () => {
     expect(html).not.toContain('Nahradit i zamčené');
   });
 
+  it('explains the start and what stays unchanged', () => {
+    const html = render(saved);
+    expect(html).toContain('Začít od směny');
+    expect(html).toContain('Nejdříve od zítřejší denní směny');
+    expect(html).not.toContain('Začátek nesmí být dříve');
+  });
+
   it('says so when nothing is left', () => {
     const html = render([]);
     expect(html).toContain('Konflikty: 0');
