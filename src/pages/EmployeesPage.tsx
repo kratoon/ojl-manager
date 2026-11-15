@@ -86,7 +86,15 @@ export function EmployeesPage() {
             <tbody>
               {data.employees.map((employee) => (
                 <tr key={employee.id}>
-                  <td>{employee.name}</td>
+                  <td>
+                    {canEdit ? (
+                      <a className="table-link" href={href({ name: 'employee', id: employee.id })}>
+                        {employee.name}
+                      </a>
+                    ) : (
+                      employee.name
+                    )}
+                  </td>
                   <td>{partnerName(employee)}</td>
                   {canEdit && (
                     <td className="table__actions">

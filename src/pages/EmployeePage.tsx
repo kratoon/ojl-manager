@@ -1,4 +1,5 @@
 import { EmployeeForm } from '../components/EmployeeForm';
+import { TimeOffSection } from '../components/TimeOffSection';
 import { useData } from '../data/DataProvider';
 import type { Employee } from '../data/schema';
 import { useT } from '../i18n/I18nProvider';
@@ -44,6 +45,8 @@ export function EmployeePage({ id }: { id: string }) {
           <div className="card">
             <EmployeeForm key={employee.id} extended others={data.employees.filter((e) => e.id !== employee.id)} employee={employee} onSubmit={submit} onCancel={backToList} />
           </div>
+          <h2 className="section-title">{t.timeOff.forEmployee}</h2>
+          <TimeOffSection data={data} employee={employee} canEdit />
         </>
       ) : (
         <p role="alert">{t.employees.notFound}</p>
