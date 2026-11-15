@@ -10,9 +10,9 @@ export interface NumberRange {
 }
 
 export const settingRanges = {
-  patternWeight: { min: 0.5, max: 10, step: 0.5, fallback: 4 },
-  fairnessWeight: { min: 0.5, max: 10, step: 0.5, fallback: 2 },
-  kindBalanceWeight: { min: 0.5, max: 10, step: 0.5, fallback: 1 },
+  patternWeight: { min: 1, max: 100, step: 1, fallback: 40 },
+  fairnessWeight: { min: 1, max: 100, step: 1, fallback: 20 },
+  kindBalanceWeight: { min: 1, max: 100, step: 1, fallback: 10 },
   fairnessCap: { min: 0, max: 10, step: 0.5, fallback: 2 },
   compensationGap: { min: 1, max: 10, step: 0.5, fallback: 4 },
 } as const satisfies Record<string, NumberRange>;
@@ -27,4 +27,12 @@ export function validateNumber(raw: string, range: NumberRange): SettingError | 
   const value = Number(raw);
   if (!Number.isFinite(value)) return 'required';
   return value < range.min || value > range.max ? 'range' : null;
+}
+
+/**
+ * The rotation only always wins while its weight is greater than the sum of all other weights: every rule
+ * scores 1 to 10, so the others together can move the average as far as the pattern can. True when it holds.
+ */
+export function patternDominates(patternWeight: number, otherWeights: number[]): boolean {
+  return patternWeight > otherWeights.reduce((sum, w) => sum + w, 0);
 }

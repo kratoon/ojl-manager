@@ -47,8 +47,10 @@ const cs = {
     errorRequired: 'Zadejte platnou hodnotu.',
     errorRange: 'Hodnota musí být mezi {min} a {max}.',
     weightsTitle: 'Váhy',
+    patternNotDominant:
+      'Váha vzorce by měla být větší než součet ostatních vah (spravedlnost + denní/noční směny). Jinak může generátor střídání dvojic porušit i bez kompenzace.',
     weightsHint:
-      'Váhy se porovnávají mezi sebou: kritérium s vyšší váhou rozhoduje, když si kritéria odporují. Stejné váhy znamenají stejný vliv. Důležitý je poměr, ne samotná čísla.',
+      'Váhy se porovnávají mezi sebou: kritérium s vyšší váhou rozhoduje, když si kritéria odporují. Stejné váhy znamenají stejný vliv. Důležitý je poměr, ne samotná čísla. Výchozí poměr: vzorec 40, spravedlnost 20, denní/noční směny 10.',
     patternTitle: 'Vzorec dlouhý/krátký týden',
     patternWeight: 'Váha vzorce',
     patternWeightHelp:
@@ -222,8 +224,10 @@ const en: Labels = {
     errorRequired: 'Enter a valid value.',
     errorRange: 'The value must be between {min} and {max}.',
     weightsTitle: 'Weights',
+    patternNotDominant:
+      'The pattern weight should be greater than the sum of the other weights (fairness + day/night balance). Otherwise the generator can break the rotation of the pairs even without compensation.',
     weightsHint:
-      'Weights are compared with each other: the criterion with the higher weight wins when criteria disagree. Equal weights mean equal influence. The ratio matters, not the numbers themselves.',
+      'Weights are compared with each other: the criterion with the higher weight wins when criteria disagree. Equal weights mean equal influence. The ratio matters, not the numbers themselves. Default ratio: pattern 40, fairness 20, day/night 10.',
     patternTitle: 'Long/short week pattern',
     patternWeight: 'Pattern weight',
     patternWeightHelp:

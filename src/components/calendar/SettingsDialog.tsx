@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Company } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import {
+  patternDominates,
   settingRanges,
   validateNumber,
   type NumberSetting,
@@ -55,6 +56,8 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
     compensationGap: validateNumber(values.compensationGap, settingRanges.compensationGap),
   };
   const valid = Object.values(errors).every((e) => e === null);
+  // Checked only on valid numbers: the rotation has to outweigh everything else together.
+  const dominates = !valid || patternDominates(Number(values.patternWeight), [Number(values.fairnessWeight), Number(values.kindBalanceWeight)]);
 
   const errorText = (key: NumberSetting, error: SettingError) => {
     const r = settingRanges[key];
@@ -141,6 +144,11 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
           {numberField('fairnessCap', t.settings.fairnessCap, t.settings.fairnessCapHelp, t.settings.fairnessCapScale)}
         </fieldset>
 
+        {!dominates && (
+          <p role="status" className="warning">
+            {t.settings.patternNotDominant}
+          </p>
+        )}
         {saveError && (
           <p role="alert" className="error">
             {t.employees.saveError}
