@@ -75,6 +75,13 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
   // Scale factor k: seats to fill divided by all counting shifts (ADR-aaa3ccd).
   const totalCounting = employees.reduce((sum, e) => sum + workable.filter((s) => countsFor(e, s)).length, 0);
   const k = totalCounting === 0 ? 0 : (seats * workable.length) / totalCounting;
+  // The same scale factor per kind, so day and night shifts are balanced separately (OJL-ba0e2e7).
+  const kindScale = (part: Shift['part']) => {
+    const ofKind = workable.filter((s) => s.part === part);
+    const counting = employees.reduce((sum, e) => sum + ofKind.filter((s) => countsFor(e, s)).length, 0);
+    return counting === 0 ? 0 : (seats * ofKind.length) / counting;
+  };
+  const kScale = { day: kindScale('day'), night: kindScale('night') };
 
   // Assignments that stay: everything except auto assignments from startAt on, inside the range.
   const kept = new Map<ShiftKey, Assignment[]>();
@@ -90,10 +97,14 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
 
   const worked = new Map(employees.map((e) => [e.id, 0]));
   const counting = new Map(employees.map((e) => [e.id, 0]));
+  const workedKind = { day: new Map(employees.map((e) => [e.id, 0])), night: new Map(employees.map((e) => [e.id, 0])) };
+  const countingKind = { day: new Map(employees.map((e) => [e.id, 0])), night: new Map(employees.map((e) => [e.id, 0])) };
   const unfilled: Unfilled[] = [];
   const compensatingIds = new Set<string>();
   /** Expected shifts by now minus shifts worked so far. Positive = behind. */
   const gapOf = (e: Employee) => k * (counting.get(e.id) ?? 0) - (worked.get(e.id) ?? 0);
+  const kindGapOf = (e: Employee, part: Shift['part']) =>
+    kScale[part] * (countingKind[part].get(e.id) ?? 0) - (workedKind[part].get(e.id) ?? 0);
   const assignedTo = (s: Shift): readonly string[] => kept.get(shiftKey(s))?.map((a) => a.employeeId) ?? [];
 
   for (const shift of shifts) {
@@ -119,13 +130,17 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
           .filter((e) => !taken.has(e.id))
           .map((employee) => {
             const gap = gapOf(employee);
+            const kindGap = kindGapOf(employee, shift.part);
             const compensating = compensatingIds.has(employee.id);
-            return { employee, gap, ...evaluate(orderedRules, { data, employee, shift, assignedTo, gap, compensating, pattern }) };
+            return { employee, gap, kindGap, ...evaluate(orderedRules, { data, employee, shift, assignedTo, gap, kindGap, compensating, pattern }) };
           });
         let candidates = evaluated.filter((c) => c.score > 0);
         // Fairness cap: skip employees too far above expected, unless that would leave nobody.
         const underCap = candidates.filter((c) => c.gap >= -data.company.fairnessCap);
         if (underCap.length > 0) candidates = underCap;
+        // The same cap for the kind of this shift: nobody piles up nights (or days) while others remain.
+        const underKindCap = candidates.filter((c) => c.kindGap >= -data.company.fairnessCap);
+        if (underKindCap.length > 0) candidates = underKindCap;
 
         const best = candidates.reduce<(typeof candidates)[number] | undefined>(
           (top, c) => (top === undefined || c.score > top.score ? c : top),
@@ -134,6 +149,7 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
         if (best) {
           kept.set(key, [...(kept.get(key) ?? []), { employeeId: best.employee.id, source: 'auto' }]);
           worked.set(best.employee.id, (worked.get(best.employee.id) ?? 0) + 1);
+          workedKind[shift.part].set(best.employee.id, (workedKind[shift.part].get(best.employee.id) ?? 0) + 1);
         } else {
           missing++;
           for (const c of evaluated) for (const r of c.blockedBy) reasonSet.add(r);
@@ -143,8 +159,17 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     }
 
     // Tally what was already on this shift before generating (picks above were counted as they were made).
-    for (const id of initialIds) worked.set(id, (worked.get(id) ?? 0) + 1);
-    if (!closed) for (const e of employees) if (countsFor(e, shift)) counting.set(e.id, (counting.get(e.id) ?? 0) + 1);
+    for (const id of initialIds) {
+      worked.set(id, (worked.get(id) ?? 0) + 1);
+      workedKind[shift.part].set(id, (workedKind[shift.part].get(id) ?? 0) + 1);
+    }
+    if (!closed) {
+      for (const e of employees) {
+        if (!countsFor(e, shift)) continue;
+        counting.set(e.id, (counting.get(e.id) ?? 0) + 1);
+        countingKind[shift.part].set(e.id, (countingKind[shift.part].get(e.id) ?? 0) + 1);
+      }
+    }
   }
 
   // Stable output: sorted shifts, and employees within a shift in the fixed employee order.

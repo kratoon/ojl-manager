@@ -100,6 +100,8 @@ export const companySchema = z.object({
   maxInRow: z.number().int().min(1).default(3),
   /** Weight of the fairness rule in the score (ADR-aaa3ccd). */
   fairnessWeight: z.number().positive().default(2),
+  /** Weight of the day/night balance rule: expected day (or night) shifts by now minus worked (OJL-ba0e2e7). */
+  kindBalanceWeight: z.number().positive().default(1),
   /** Shifts above expected after which an employee is skipped while others remain (ADR-aaa3ccd). */
   fairnessCap: z.number().min(0).default(2),
   /** Employees per shift (ADR-a1cb97d). */

@@ -22,6 +22,7 @@ type Values = Record<NumberSetting, string> & { anchor: string };
 const defaults: Values = {
   patternWeight: String(settingRanges.patternWeight.fallback),
   fairnessWeight: String(settingRanges.fairnessWeight.fallback),
+  kindBalanceWeight: String(settingRanges.kindBalanceWeight.fallback),
   fairnessCap: String(settingRanges.fairnessCap.fallback),
   compensationGap: String(settingRanges.compensationGap.fallback),
   anchor: patternSettingsSchema.parse({}).anchor,
@@ -31,6 +32,7 @@ function initial(company: Company): Values {
   return {
     patternWeight: String(company.pattern.weight),
     fairnessWeight: String(company.fairnessWeight),
+    kindBalanceWeight: String(company.kindBalanceWeight),
     fairnessCap: String(company.fairnessCap),
     compensationGap: String(company.pattern.compensationGap),
     anchor: company.pattern.anchor,
@@ -51,6 +53,7 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
   const errors: Record<keyof Values, SettingError | null> = {
     patternWeight: validateNumber(values.patternWeight, settingRanges.patternWeight),
     fairnessWeight: validateNumber(values.fairnessWeight, settingRanges.fairnessWeight),
+    kindBalanceWeight: validateNumber(values.kindBalanceWeight, settingRanges.kindBalanceWeight),
     fairnessCap: validateNumber(values.fairnessCap, settingRanges.fairnessCap),
     compensationGap: validateNumber(values.compensationGap, settingRanges.compensationGap),
     anchor: validateMonday(values.anchor),
@@ -71,6 +74,7 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
       await onSave({
         ...company,
         fairnessWeight: Number(values.fairnessWeight),
+        kindBalanceWeight: Number(values.kindBalanceWeight),
         fairnessCap: Number(values.fairnessCap),
         pattern: {
           ...company.pattern,
@@ -160,6 +164,7 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
         <fieldset className="vacations">
           <legend>{t.settings.fairnessTitle}</legend>
           {numberField('fairnessWeight', t.settings.fairnessWeight, t.settings.fairnessWeightHelp, t.settings.fairnessWeightScale)}
+          {numberField('kindBalanceWeight', t.settings.kindBalanceWeight, t.settings.kindBalanceWeightHelp, t.settings.kindBalanceWeightScale)}
           {numberField('fairnessCap', t.settings.fairnessCap, t.settings.fairnessCapHelp, t.settings.fairnessCapScale)}
         </fieldset>
 
