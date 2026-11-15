@@ -1,4 +1,4 @@
-import type { Assignment, Employee } from '../../data/schema';
+import { TEMPORARY_ID, type Assignment, type Employee } from '../../data/schema';
 import { useT } from '../../i18n/I18nProvider';
 import type { ReasonCode } from '../../schedule/rules';
 import type { DayPart } from '../../schedule/shift';
@@ -37,10 +37,11 @@ export function ShiftTile({ part, entries, seats, closed, changed, previous, out
 
   const partLabel = part === 'day' ? t.calendar.day : t.calendar.night;
   const fullName = (e: Employee | undefined) => e?.name ?? '';
+  const nameOf = (a: Assignment, e: Employee | undefined) => (a.employeeId === TEMPORARY_ID ? t.calendar.temporary : fullName(e));
   const status = closed ? t.calendar.closed : t.calendar.empty;
   const emptySeats = Math.max(seats - entries.length, 0);
   const previousText = previous && previous.length > 0 ? previous.map((e) => e.name).join(', ') : t.calendar.previouslyNobody;
-  const summary = entries.length > 0 ? entries.map((e) => fullName(e.employee)).join(', ') : status;
+  const summary = entries.length > 0 ? entries.map((e) => nameOf(e.assignment, e.employee)).join(', ') : status;
 
   const content = (
     <>
@@ -49,12 +50,13 @@ export function ShiftTile({ part, entries, seats, closed, changed, previous, out
           {part === 'day' ? <SunIcon /> : <MoonIcon />}
         </span>
         <span className="slot__seats">
-          {entries.map(({ assignment, employee, warnings }) => {
+          {entries.map(({ assignment, employee, warnings }, index) => {
+            const label = nameOf(assignment, employee);
             const warningText = warnings.map((w) => t.reasons[w]).join(', ');
             return (
-              <span key={assignment.employeeId} className="slot__seat">
-                <span className="slot__name" title={fullName(employee)}>
-                  {employee?.name ?? ''}
+              <span key={`${assignment.employeeId}-${index}`} className="slot__seat">
+                <span className={assignment.employeeId === TEMPORARY_ID ? 'slot__name slot__name--temporary' : 'slot__name'} title={label}>
+                  {label}
                 </span>
                 {warnings.length > 0 && (
                   <span className="slot__icon slot__icon--warning" title={`${t.calendar.warning}: ${warningText}`} role="img" aria-label={`${t.calendar.warning}: ${warningText}`}>

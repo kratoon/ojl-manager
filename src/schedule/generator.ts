@@ -1,4 +1,4 @@
-import type { Assignment, Data, Employee, Vacation } from '../data/schema';
+import { TEMPORARY_ID, type Assignment, type Data, type Employee, type Vacation } from '../data/schema';
 import { buildPattern, type PatternEvidence } from './pattern';
 import { byString, compareEmployees } from './order';
 import { companyClosedReason, defaultRules, evaluate, type ReasonCode, type Rule } from './rules';
@@ -159,7 +159,8 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     }
 
     // Tally what was already on this shift before generating (picks above were counted as they were made).
-    for (const id of initialIds) {
+    // Temporary workers take a seat but are not employees: nobody's count changes.
+    for (const id of initialIds.filter((i) => i !== TEMPORARY_ID)) {
       worked.set(id, (worked.get(id) ?? 0) + 1);
       workedKind[shift.part].set(id, (workedKind[shift.part].get(id) ?? 0) + 1);
     }

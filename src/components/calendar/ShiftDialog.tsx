@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Data } from '../../data/schema';
+import { TEMPORARY_ID, type Data } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import { compareEmployees } from '../../schedule/generator';
 import { clearShift } from '../../schedule/locks';
@@ -41,9 +41,11 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
   const [toForbid, setToForbid] = useState('');
   const [error, setError] = useState(false);
 
-  const chosen = selected.filter(Boolean);
+  // Employees only: a temporary worker may take any number of seats.
+  const chosen = selected.filter((id) => id && id !== TEMPORARY_ID);
   const warningsFor = (id: string) => (id ? brokenRules({ ...data, forbiddenShifts: draftForbidden() }, shift, id) : []);
   const nameOf = (id: string) => {
+    if (id === TEMPORARY_ID) return t.calendar.temporary;
     const e = data.employees.find((x) => x.id === id);
     return e ? e.name : id;
   };
@@ -90,7 +92,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
   async function persist() {
     const assignments = { ...data.assignments };
     const entries = selected.flatMap((employeeId, seat) =>
-      employeeId ? [{ employeeId, source: locked[seat] ? ('manual' as const) : ('auto' as const) }] : [],
+      employeeId ? [{ employeeId, source: locked[seat] || employeeId === TEMPORARY_ID ? ('manual' as const) : ('auto' as const) }] : [],
     );
     if (entries.length > 0) assignments[key] = entries;
     else delete assignments[key];
@@ -112,7 +114,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           const warnings = warningsFor(value);
           return (
             <div key={seat} className="seat-field">
-<div className="seat-row">
+              <div className="seat-row">
                 <label className="field">
                   <span>{`${t.calendar.assignEmployee} ${seat + 1}`}</span>
                   <select
@@ -121,6 +123,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                     onChange={(e) => choose(seat, e.target.value)}
                   >
                     <option value="">{t.calendar.noEmployee}</option>
+                    <option value={TEMPORARY_ID}>{t.calendar.temporaryOption}</option>
                     {employees
                       .filter((e) => !forbidden.includes(e.id) && (!chosen.includes(e.id) || e.id === value))
                       .map((e) => (
@@ -130,7 +133,12 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                       ))}
                   </select>
                 </label>
-                {value !== '' && (
+                {value === TEMPORARY_ID && (
+                  <button type="button" className="button button--glyph" disabled title={t.calendar.locked} aria-label={t.calendar.locked}>
+                    <LockIcon size={18} />
+                  </button>
+                )}
+                {value !== '' && value !== TEMPORARY_ID && (
                   <button
                     type="button"
                     className="button button--glyph"
@@ -161,6 +169,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
           );
         })}
         <p className="hint">{t.calendar.lockHint}</p>
+        {selected.includes(TEMPORARY_ID) && <p className="hint">{t.calendar.temporaryHint}</p>}
 
         <fieldset className="vacations">
           <legend>{t.calendar.forbiddenTitle}</legend>
