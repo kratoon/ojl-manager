@@ -6,6 +6,7 @@ import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar'
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
+import { LockIcon, UnlockIcon } from '../components/calendar/icons';
 import { ShiftTile, type TileEntry } from '../components/calendar/ShiftTile';
 import { useData } from '../data/DataProvider';
 import type { Assignment, Data, Employee } from '../data/schema';
@@ -61,6 +62,17 @@ function MonthTotals({ counts, employees }: { counts: Record<string, ShiftCounts
         })}
       </ul>
     </div>
+  );
+}
+
+/** Icon button: shows whether the month is locked, the label tells what a click does. */
+function MonthLockButton({ locked, empty, onToggle }: { locked: boolean; empty: boolean; onToggle(lock: boolean): void }) {
+  const t = useT();
+  const label = locked ? t.calendar.unlockMonth : t.calendar.lockMonth;
+  return (
+    <button type="button" className="button button--icon" title={label} aria-label={label} disabled={empty} onClick={() => onToggle(!locked)}>
+      {locked ? <LockIcon size={18} /> : <UnlockIcon size={18} />}
+    </button>
   );
 }
 
@@ -205,17 +217,11 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
             <div className="month__header">
               <h2 className="month__title">{monthName.format(new Date(year, month, 1))}</h2>
               {canEdit && !preview && (
-                <button
-                  type="button"
-                  className="button"
-                  disabled={!Object.keys(data.assignments).some((k) => k.startsWith(monthKey(year, month)))}
-                  onClick={() => {
-                    const prefix = monthKey(year, month);
-                    void save({ ...data, assignments: setMonthLock(data.assignments, prefix, !isMonthLocked(data.assignments, prefix)) });
-                  }}
-                >
-                  {isMonthLocked(data.assignments, monthKey(year, month)) ? t.calendar.unlockMonth : t.calendar.lockMonth}
-                </button>
+                <MonthLockButton
+                  locked={isMonthLocked(data.assignments, monthKey(year, month))}
+                  empty={!Object.keys(data.assignments).some((k) => k.startsWith(monthKey(year, month)))}
+                  onToggle={(lock) => void save({ ...data, assignments: setMonthLock(data.assignments, monthKey(year, month), lock) })}
+                />
               )}
             </div>
             <div className="month__grid" role="grid">
