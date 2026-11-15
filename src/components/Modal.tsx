@@ -3,12 +3,14 @@ import { useT } from '../i18n/I18nProvider';
 
 interface ModalProps {
   title: string;
+  /** A wider dialog for forms with side notes. */
+  wide?: boolean;
   onClose(): void;
   children: ReactNode;
 }
 
 /** Modal dialog on top of the native <dialog> element (focus trap, Escape and inert page for free). */
-export function Modal({ title, onClose, children }: ModalProps) {
+export function Modal({ title, wide, onClose, children }: ModalProps) {
   const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -22,7 +24,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={wide ? 'modal modal--wide' : 'modal'}
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();

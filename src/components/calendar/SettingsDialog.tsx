@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Company } from '../../data/schema';
+import { patternSettingsSchema, type Company } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import {
   settingRanges,
@@ -17,6 +17,15 @@ interface SettingsDialogProps {
 }
 
 type Values = Record<NumberSetting, string> & { anchor: string };
+
+/** The values of a fresh data file. */
+const defaults: Values = {
+  patternWeight: String(settingRanges.patternWeight.fallback),
+  fairnessWeight: String(settingRanges.fairnessWeight.fallback),
+  fairnessCap: String(settingRanges.fairnessCap.fallback),
+  compensationGap: String(settingRanges.compensationGap.fallback),
+  anchor: patternSettingsSchema.parse({}).anchor,
+};
 
 function initial(company: Company): Values {
   return {
@@ -109,7 +118,7 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
   }
 
   return (
-    <Modal title={t.settings.title} onClose={onClose}>
+    <Modal title={t.settings.title} wide onClose={onClose}>
       <form
         className="form"
         noValidate
@@ -160,6 +169,9 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
           </p>
         )}
         <div className="form__actions">
+          <button type="button" className="button form__actions-start" onClick={() => setValues(defaults)}>
+            {t.settings.reset}
+          </button>
           <button type="button" className="button" onClick={onClose}>
             {t.common.cancel}
           </button>

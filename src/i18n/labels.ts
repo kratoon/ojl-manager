@@ -39,6 +39,7 @@ const cs = {
   settings: {
     button: 'Nastavení plánování',
     title: 'Nastavení plánování',
+    reset: 'Obnovit výchozí hodnoty',
     intro:
       'Tato čísla určují, jak generátor volí zaměstnance. Změna se projeví až při dalším přegenerování kalendáře, zamčené směny zůstanou beze změny.',
     range: 'Povolený rozsah: {min} až {max}, výchozí hodnota: {default}.',
@@ -212,6 +213,7 @@ const en: Labels = {
   settings: {
     button: 'Scheduling settings',
     title: 'Scheduling settings',
+    reset: 'Reset to defaults',
     intro:
       'These numbers decide how the generator picks employees. A change takes effect the next time the calendar is regenerated; locked shifts stay as they are.',
     range: 'Allowed range: {min} to {max}, default: {default}.',

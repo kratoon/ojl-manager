@@ -313,6 +313,25 @@ h1 {
   box-shadow: 0 12px 40px rgb(13 16 51 / 0.3);
 }
 
+.modal--wide {
+  width: min(60rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+}
+
+.modal--wide .modal__body {
+  max-height: calc(100vh - 7rem);
+  overflow-y: auto;
+}
+
+.modal--wide .form__actions {
+  position: sticky;
+  bottom: -1.5rem;
+  margin: 0 -1.5rem -1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
 .modal::backdrop {
   background: rgb(13 16 51 / 0.5);
 }
@@ -782,15 +801,43 @@ button.slot:focus-visible {
 }
 
 .setting {
+  display: grid;
+  grid-template-columns: minmax(12rem, 18rem) 1fr;
+  grid-template-areas:
+    'field help'
+    'error help';
+  align-items: start;
+  gap: 0.25rem 1.5rem;
+}
+
+.setting .field {
+  grid-area: field;
+}
+
+.setting .error {
+  grid-area: error;
+  margin: 0;
+}
+
+.setting__help {
+  grid-area: help;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.setting__help {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+@media (max-width: 40rem) {
+  .setting {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'field'
+      'help'
+      'error';
+  }
+}
+
+.form__actions-start {
+  margin-right: auto;
 }
 
 .hint {
