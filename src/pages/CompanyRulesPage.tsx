@@ -36,11 +36,7 @@ function CompanyRulesForm() {
   const [workingDays, setWorkingDays] = useState<Weekday[]>(company?.workingDays ?? allWeekdays);
   const [closed, setClosed] = useState<ClosedDraft[]>(company?.closedPeriods ?? []);
   const [maxInRow, setMaxInRow] = useState(String(company?.maxInRow ?? 3));
-  const [fairnessWeight, setFairnessWeight] = useState(String(company?.fairnessWeight ?? 2));
-  const [fairnessCap, setFairnessCap] = useState(String(company?.fairnessCap ?? 2));
   const [seatsPerShift, setSeatsPerShift] = useState(String(company?.seatsPerShift ?? 2));
-  const [patternAnchor, setPatternAnchor] = useState(company?.pattern.anchor ?? '');
-  const [patternWeight, setPatternWeight] = useState(String(company?.pattern.weight ?? 4));
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
   // Localized weekday names. 2024-01-01 is a Monday.
@@ -58,14 +54,13 @@ function CompanyRulesForm() {
 
   async function handle(e: FormEvent) {
     e.preventDefault();
+    // Fairness and pattern settings live in the scheduling settings dialog of the calendar: keep them.
     const parsed = companySchema.safeParse({
+      ...company,
       workingDays: allWeekdays.filter((d) => workingDays.includes(d)),
       closedPeriods: closed,
       maxInRow: Number(maxInRow),
-      fairnessWeight: Number(fairnessWeight),
-      fairnessCap: Number(fairnessCap),
       seatsPerShift: Number(seatsPerShift),
-      pattern: { anchor: patternAnchor, weight: Number(patternWeight) },
     });
     if (!parsed.success) return setStatus('error');
     try {
@@ -118,27 +113,6 @@ function CompanyRulesForm() {
           <label className="field">
             <span>{t.rules.seatsPerShift}</span>
             <input type="number" min={1} max={4} step={1} value={seatsPerShift} onChange={(e) => setSeatsPerShift(e.target.value)} />
-          </label>
-
-          <fieldset className="vacations">
-            <legend>{t.rules.patternTitle}</legend>
-            <label className="field">
-              <span>{t.rules.patternAnchor}</span>
-              <input type="date" value={patternAnchor} onChange={(e) => setPatternAnchor(e.target.value)} />
-            </label>
-            <label className="field">
-              <span>{t.rules.patternWeight}</span>
-              <input type="number" min={0.5} step={0.5} value={patternWeight} onChange={(e) => setPatternWeight(e.target.value)} />
-            </label>
-          </fieldset>
-
-          <label className="field">
-            <span>{t.rules.fairnessWeight}</span>
-            <input type="number" min={0.5} step={0.5} value={fairnessWeight} onChange={(e) => setFairnessWeight(e.target.value)} />
-          </label>
-          <label className="field">
-            <span>{t.rules.fairnessCap}</span>
-            <input type="number" min={0} step={0.5} value={fairnessCap} onChange={(e) => setFairnessCap(e.target.value)} />
           </label>
 
           {status === 'error' && (

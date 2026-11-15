@@ -781,6 +781,18 @@ button.slot:focus-visible {
   border-radius: 0.375rem;
 }
 
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.setting__help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .hint {
   margin: 0;
   font-size: 0.875rem;

@@ -5,6 +5,7 @@ import { PdfDialog } from '../components/calendar/PdfDialog';
 import { PreviewBar, type ShiftCounts } from '../components/calendar/PreviewBar';
 import { ShiftCountsLegend } from '../components/calendar/ShiftCountsLegend';
 import { RegenerateDialog } from '../components/calendar/RegenerateDialog';
+import { SettingsDialog } from '../components/calendar/SettingsDialog';
 import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { LockIcon, UnlockIcon } from '../components/calendar/icons';
 import { ShiftTile, type TileEntry } from '../components/calendar/ShiftTile';
@@ -81,6 +82,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const locale = useLocale();
   const { can } = usePermissions();
   const canEdit = can('calendar:edit');
+  const canEditSettings = can('rules:edit');
   const today = useMemo(() => new Date(), []);
   const currentRef = useRef<HTMLElement>(null);
 
@@ -88,6 +90,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   const [regenerating, setRegenerating] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const months = useMemo(() => calendarMonths(today), [today]);
   const range = useMemo(() => calendarRange(today), [today]);
@@ -283,6 +286,11 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
             {t.calendar.regenerate}
           </button>
         )}
+        {canEditSettings && (
+          <button type="button" className="button" disabled={preview !== null} onClick={() => setSettingsOpen(true)}>
+            {t.settings.button}
+          </button>
+        )}
         <button type="button" className="button" disabled={preview !== null} onClick={() => setPdfOpen(true)}>
           {t.calendar.pdfButton}
         </button>
@@ -300,6 +308,16 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
             setSelected(null);
           }}
           onClose={() => setSelected(null)}
+        />
+      )}
+      {canEditSettings && settingsOpen && (
+        <SettingsDialog
+          company={data.company}
+          onSave={async (company) => {
+            await save({ ...data, company });
+            setSettingsOpen(false);
+          }}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
       {pdfOpen && (
