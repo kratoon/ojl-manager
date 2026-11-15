@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { companySchema } from '../src/data/schema';
-import { settingRanges, validateNumber } from '../src/schedule/settings';
+import { patternDominates, settingRanges, validateNumber } from '../src/schedule/settings';
 
 describe('validateNumber', () => {
-  const r = settingRanges.fairnessWeight; // 0.5 to 10
+  const r = settingRanges.fairnessWeight; // 1 to 100
 
   it('accepts values inside the range, including the ends', () => {
-    expect(validateNumber('2', r)).toBeNull();
-    expect(validateNumber('0.5', r)).toBeNull();
-    expect(validateNumber('10', r)).toBeNull();
+    expect(validateNumber('20', r)).toBeNull();
+    expect(validateNumber('1', r)).toBeNull();
+    expect(validateNumber('100', r)).toBeNull();
   });
 
   it('rejects values outside the range', () => {
-    expect(validateNumber('0.4', r)).toBe('range');
-    expect(validateNumber('10.5', r)).toBe('range');
+    expect(validateNumber('0.5', r)).toBe('range');
+    expect(validateNumber('101', r)).toBe('range');
     expect(validateNumber('-1', r)).toBe('range');
   });
 
@@ -39,5 +39,18 @@ describe('validateNumber', () => {
       expect(range.fallback).toBeGreaterThanOrEqual(range.min);
       expect(range.fallback).toBeLessThanOrEqual(range.max);
     }
+  });
+});
+
+describe('patternDominates', () => {
+  it('holds for the defaults and leaves room for more rules', () => {
+    const { patternWeight, fairnessWeight, kindBalanceWeight } = settingRanges;
+    expect(patternDominates(patternWeight.fallback, [fairnessWeight.fallback, kindBalanceWeight.fallback])).toBe(true);
+    expect(patternWeight.fallback - fairnessWeight.fallback - kindBalanceWeight.fallback).toBeGreaterThanOrEqual(10);
+  });
+
+  it('fails when the others together are as strong as the pattern', () => {
+    expect(patternDominates(30, [20, 10])).toBe(false);
+    expect(patternDominates(31, [20, 10])).toBe(true);
   });
 });

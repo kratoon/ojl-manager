@@ -79,7 +79,7 @@ const mondaySchema = z
 export const patternSettingsSchema = z.object({
   anchor: mondaySchema.default('2026-11-02'),
   /** Weight of the pattern preference in the score. */
-  weight: z.number().positive().default(4),
+  weight: z.number().positive().default(40),
   /**
    * Compensation breaks the rotation: an employee at least this many shifts behind (after PTO) is not held
    * to the pattern until the gap is closed, then the rotation takes over again.
@@ -87,7 +87,29 @@ export const patternSettingsSchema = z.object({
   compensationGap: z.number().positive().default(4),
 });
 
-export const companySchema = z.object({
+/**
+ * Weights are ratios. They were first stored on a 0.5 to 10 scale (pattern 4, fairness 2, kind balance 1);
+ * the scale is now 10 times finer so new rules fit below the existing ones. A company without
+ * `weightsVersion` is on the old scale: its weights are multiplied by 10 once and the marker is set.
+ */
+export const currentWeightsVersion = 2;
+
+function migrateWeights(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || 'weightsVersion' in value) return value;
+  const company = { ...(value as Record<string, unknown>) };
+  const scale = (n: unknown) => (typeof n === 'number' ? n * 10 : n);
+  if ('fairnessWeight' in company) company.fairnessWeight = scale(company.fairnessWeight);
+  if ('kindBalanceWeight' in company) company.kindBalanceWeight = scale(company.kindBalanceWeight);
+  const pattern = company.pattern;
+  if (pattern && typeof pattern === 'object' && 'weight' in pattern) {
+    company.pattern = { ...(pattern as Record<string, unknown>), weight: scale((pattern as Record<string, unknown>).weight) };
+  }
+  return { ...company, weightsVersion: currentWeightsVersion };
+}
+
+const companyObject = z.object({
+  /** Which weight scale the numbers below use (see migrateWeights). */
+  weightsVersion: z.number().int().default(currentWeightsVersion),
   workingDays: z.array(weekdaySchema).default(allWeekdays),
   closedPeriods: z
     .array(
@@ -99,15 +121,17 @@ export const companySchema = z.object({
   /** Max shifts of the same kind on consecutive dates. */
   maxInRow: z.number().int().min(1).default(3),
   /** Weight of the fairness rule in the score (ADR-aaa3ccd). */
-  fairnessWeight: z.number().positive().default(2),
+  fairnessWeight: z.number().positive().default(20),
   /** Weight of the day/night balance rule: expected day (or night) shifts by now minus worked (OJL-ba0e2e7). */
-  kindBalanceWeight: z.number().positive().default(1),
+  kindBalanceWeight: z.number().positive().default(10),
   /** Shifts above expected after which an employee is skipped while others remain (ADR-aaa3ccd). */
   fairnessCap: z.number().min(0).default(2),
   /** Employees per shift (ADR-a1cb97d). */
   seatsPerShift: z.number().int().min(1).max(4).default(2),
   pattern: patternSettingsSchema.default(() => patternSettingsSchema.parse({})),
 });
+
+export const companySchema = z.preprocess(migrateWeights, companyObject);
 
 export const forbiddenShiftSchema = z.object({
   id: z.string().min(1),

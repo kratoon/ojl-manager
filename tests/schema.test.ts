@@ -8,7 +8,7 @@ describe('data schema', () => {
     const data = dataSchema.parse({ employees: [employee] });
     expect(data.employees[0]).toMatchObject({ vacations: [], allowMixedPair: false });
     expect(data.assignments).toEqual({});
-    expect(data.company).toMatchObject({ maxInRow: 3, fairnessWeight: 2, fairnessCap: 2 });
+    expect(data.company).toMatchObject({ maxInRow: 3, fairnessWeight: 20, fairnessCap: 2 });
     expect(data.company.workingDays).toHaveLength(7);
   });
 
@@ -53,5 +53,29 @@ describe('data schema', () => {
   it('rejects impossible dates', () => {
     const vacation = { id: 'v', from: { date: '2026-13-45', part: 'day' }, to: { date: '2026-13-46', part: 'day' } };
     expect(dataSchema.safeParse({ employees: [{ ...employee, vacations: [vacation] }] }).success).toBe(false);
+  });
+});
+
+describe('weights scale migration', () => {
+  it('multiplies weights of a company without a version by 10, once', () => {
+    const old = dataSchema.parse({ company: { fairnessWeight: 2, kindBalanceWeight: 1, pattern: { weight: 4 } } });
+    expect(old.company.fairnessWeight).toBe(20);
+    expect(old.company.kindBalanceWeight).toBe(10);
+    expect(old.company.pattern.weight).toBe(40);
+    expect(old.company.weightsVersion).toBe(2);
+    // Saved and loaded again: not scaled a second time.
+    expect(dataSchema.parse(JSON.parse(JSON.stringify(old))).company.pattern.weight).toBe(40);
+  });
+
+  it('keeps the ratios of an old file, and leaves missing weights at the new defaults', () => {
+    const partial = dataSchema.parse({ company: { fairnessWeight: 3 } });
+    expect(partial.company.fairnessWeight).toBe(30);
+    expect(partial.company.pattern.weight).toBe(40);
+  });
+
+  it('gives a fresh file the new defaults without scaling them', () => {
+    const fresh = dataSchema.parse({});
+    expect(fresh.company).toMatchObject({ fairnessWeight: 20, kindBalanceWeight: 10, weightsVersion: 2 });
+    expect(fresh.company.pattern.weight).toBe(40);
   });
 });
