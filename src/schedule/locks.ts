@@ -1,4 +1,4 @@
-import type { Assignment } from '../data/schema';
+import { TEMPORARY_ID, type Assignment } from '../data/schema';
 import type { ShiftKey } from './shift';
 
 // Locking is the assignment source: manual = locked (ADR-fec8e13). These helpers only change the source
@@ -6,14 +6,13 @@ import type { ShiftKey } from './shift';
 
 export type Assignments = Record<string, Assignment[]>;
 
-/** Lock (every entry manual) or unlock (every entry auto) all shifts whose date starts with `monthPrefix` ("YYYY-MM"). */
+/** Lock (every entry manual; a temporary worker stays locked) or unlock (every entry auto) all shifts whose date starts with `monthPrefix` ("YYYY-MM"). */
 export function setMonthLock(assignments: Assignments, monthPrefix: string, locked: boolean): Assignments {
-  const source = locked ? 'manual' : 'auto';
+  const source: Assignment['source'] = locked ? 'manual' : 'auto';
+  // A temporary worker is always locked, whatever the month does.
+  const retag = (a: Assignment) => (a.source === source || a.employeeId === TEMPORARY_ID ? a : { ...a, source });
   return Object.fromEntries(
-    Object.entries(assignments).map(([key, list]) => [
-      key,
-      key.startsWith(monthPrefix) ? list.map((a) => (a.source === source ? a : { ...a, source })) : list,
-    ]),
+    Object.entries(assignments).map(([key, list]) => [key, key.startsWith(monthPrefix) ? list.map(retag) : list]),
   );
 }
 

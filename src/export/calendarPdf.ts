@@ -1,6 +1,6 @@
 import type { PDFFont } from 'pdf-lib';
 import { monthGrid, type YearMonth } from '../calendar/dates';
-import type { Data, Employee } from '../data/schema';
+import { TEMPORARY_ID, type Data, type Employee } from '../data/schema';
 import type { Labels, Locale } from '../i18n/labels';
 import { compareEmployees } from '../schedule/order';
 import { companyClosedReason } from '../schedule/rules';
@@ -192,10 +192,10 @@ export async function buildCalendarPdf(input: CalendarPdfInput, fonts: FontBytes
           const lineH = fontSize + 1.5;
           const names = list.map((a) => ({ a, employee: employees.get(a.employeeId) }));
           names.forEach(({ a, employee }, line) => {
-            const label = fit(bold, employee?.name ?? '', fontSize, maxW);
+            const label = fit(bold, a.employeeId === TEMPORARY_ID ? input.labels.calendar.temporary : (employee?.name ?? ''), fontSize, maxW);
             const baseline = bTop + 8 + line * lineH;
             text(bold, label, nameX, baseline, fontSize, cell.outside ? colors.faint : colors.ink);
-            if (!cell.outside) {
+            if (!cell.outside && a.employeeId !== TEMPORARY_ID) {
               const c = (counts[a.employeeId] ??= { day: 0, night: 0 });
               c[part]++;
             }

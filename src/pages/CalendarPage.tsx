@@ -10,7 +10,7 @@ import { ShiftDialog } from '../components/calendar/ShiftDialog';
 import { LockIcon, UnlockIcon } from '../components/calendar/icons';
 import { ShiftTile, type TileEntry } from '../components/calendar/ShiftTile';
 import { useData } from '../data/DataProvider';
-import type { Assignment, Data, Employee } from '../data/schema';
+import { TEMPORARY_ID, type Assignment, type Data, type Employee } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
 import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
@@ -133,6 +133,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
       const month = key.slice(0, 7);
       const counts = result.get(month) ?? {};
       for (const a of list) {
+        if (a.employeeId === TEMPORARY_ID) continue; // not an employee: no totals
         const entry = counts[a.employeeId] ?? { day: 0, night: 0 };
         if (key.endsWith(':night')) entry.night++;
         else entry.day++;

@@ -35,7 +35,7 @@ function migrateName(value: unknown): unknown {
 
 const employeeObject = z
   .object({
-    id: z.string().min(1),
+    id: z.string().min(1).refine((id) => id !== TEMPORARY_ID, 'reserved id'),
     name: z.string().trim().min(1),
     firstShift: shiftSchema.optional(),
     lastShift: shiftSchema.optional(),
@@ -53,18 +53,33 @@ const employeeObject = z
 
 export const employeeSchema = z.preprocess(migrateName, employeeObject);
 
-export const assignmentSchema = z.object({
-  employeeId: z.string().min(1),
-  /** Manual assignments are locked: the generator never changes them (ADR-fec8e13). */
-  source: z.enum(['manual', 'auto']),
-});
+/**
+ * Reserved id of a temporary worker (brigádník): someone who is not an employee and is not tracked. It takes
+ * a seat so the generator leaves it alone (OJL-b8cdc86). No employee can have this id.
+ */
+export const TEMPORARY_ID = 'temporary';
+
+export const assignmentSchema = z
+  .object({
+    employeeId: z.string().min(1),
+    /** Manual assignments are locked: the generator never changes them (ADR-fec8e13). */
+    source: z.enum(['manual', 'auto']),
+  })
+  .refine((a) => a.employeeId !== TEMPORARY_ID || a.source === 'manual', {
+    message: 'a temporary worker is always locked',
+  });
 
 /** The employees on one shift (one entry per seat). Older files stored a single assignment: it migrates. */
 export const shiftAssignmentsSchema = z.preprocess(
   (value) => (Array.isArray(value) ? value : [value]),
-  z.array(assignmentSchema).max(8).refine((list) => new Set(list.map((a) => a.employeeId)).size === list.length, {
-    message: 'an employee cannot take two seats of one shift',
-  }),
+  z.array(assignmentSchema).max(8).refine(
+    (list) => {
+      // Temporary workers are anonymous: several may share a shift.
+      const ids = list.map((a) => a.employeeId).filter((id) => id !== TEMPORARY_ID);
+      return new Set(ids).size === ids.length;
+    },
+    { message: 'an employee cannot take two seats of one shift' },
+  ),
 );
 
 /** Start of block 0 of the long/short rotation: a Monday (ADR-a1cb97d). */
