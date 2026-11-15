@@ -6,20 +6,12 @@ import { ShiftField } from './ShiftField';
 
 interface EmployeeFormProps {
   employee?: Employee;
-  /** Show scheduling fields (first/last shift, vacations, overrides). Names only otherwise. */
+  /** Show scheduling fields (first/last shift, overrides). Names only otherwise. Time off has its own table. */
   extended?: boolean;
   /** Everybody else, to pick a pair from (extended form only). */
   others?: Employee[];
   onSubmit(employee: Employee): Promise<void>;
   onCancel(): void;
-}
-
-/** Vacation being edited: a date may be missing until the user fills it in. */
-interface VacationDraft {
-  id: string;
-  from?: Shift;
-  to?: Shift;
-  compensate: boolean;
 }
 
 /** Shared by the create modal and the edit page. */
@@ -31,11 +23,7 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
   const [partnerId, setPartnerId] = useState(employee?.partnerId ?? '');
   const [maxInRow, setMaxInRow] = useState(employee?.maxInRow?.toString() ?? '');
   const [allowMixedPair, setAllowMixedPair] = useState(employee?.allowMixedPair ?? false);
-  const [vacations, setVacations] = useState<VacationDraft[]>(employee?.vacations ?? []);
   const [error, setError] = useState(false);
-
-  const updateVacation = (id: string, patch: Partial<VacationDraft>) =>
-    setVacations((list) => list.map((v) => (v.id === id ? { ...v, ...patch } : v)));
 
   async function handle(e: FormEvent) {
     e.preventDefault();
@@ -50,7 +38,6 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
         lastShift,
         maxInRow: maxInRow === '' ? undefined : Number(maxInRow),
         allowMixedPair,
-        vacations,
       }),
     };
     const parsed = employeeSchema.safeParse(candidate);
@@ -94,30 +81,6 @@ export function EmployeeForm({ employee, extended = false, others = [], onSubmit
             <input type="checkbox" checked={allowMixedPair} onChange={(e) => setAllowMixedPair(e.target.checked)} />
             <span>{t.employees.allowMixedPair}</span>
           </label>
-
-          <fieldset className="vacations">
-            <legend>{t.employees.vacations}</legend>
-            {vacations.map((v) => (
-              <div key={v.id} className="vacation">
-                <ShiftField label={t.employees.vacationFrom} value={v.from} onChange={(from) => updateVacation(v.id, { from })} />
-                <ShiftField label={t.employees.vacationTo} value={v.to} onChange={(to) => updateVacation(v.id, { to })} />
-                <label className="check">
-                  <input type="checkbox" checked={v.compensate} onChange={(e) => updateVacation(v.id, { compensate: e.target.checked })} />
-                  <span>{t.employees.compensate}</span>
-                </label>
-                <button type="button" className="button button--danger" onClick={() => setVacations((l) => l.filter((x) => x.id !== v.id))}>
-                  {t.common.remove}
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="button"
-              onClick={() => setVacations((l) => [...l, { id: crypto.randomUUID(), compensate: true } satisfies VacationDraft])}
-            >
-              {t.employees.addVacation}
-            </button>
-          </fieldset>
         </>
       )}
 

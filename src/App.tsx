@@ -5,6 +5,7 @@ import { CompanyRulesPage } from './pages/CompanyRulesPage';
 import { EmployeePage } from './pages/EmployeePage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { HomePage } from './pages/HomePage';
+import { TimeOffPage } from './pages/TimeOffPage';
 import { usePermissions } from './permissions/PermissionsProvider';
 import { routePermissions, useRoute } from './router';
 
@@ -18,6 +19,7 @@ export function App() {
   else if (route.name === 'employees') page = <EmployeesPage />;
   else if (route.name === 'calendar') page = <CalendarPage />;
   else if (route.name === 'rules') page = <CompanyRulesPage />;
+  else if (route.name === 'timeOff') page = <TimeOffPage />;
   else if (route.name === 'employee') page = <EmployeePage id={route.id} />;
 
   return (

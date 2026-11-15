@@ -25,6 +25,7 @@ export function SetupMenu() {
 
   const menu: { route: Route; label: string }[] = [
     { route: { name: 'employees' }, label: t.nav.employees },
+    { route: { name: 'timeOff' }, label: t.nav.timeOff },
     { route: { name: 'rules' }, label: t.nav.rules },
   ];
   const items = menu.filter((item) =>

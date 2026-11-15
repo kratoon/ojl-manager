@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Permission } from './permissions/permissions';
 
 // Hash routing works on GitHub Pages without server-side fallbacks.
-export type Route = { name: 'home' } | { name: 'employees' } | { name: 'employee'; id: string } | { name: 'calendar' } | { name: 'rules' };
+export type Route = { name: 'home' } | { name: 'employees' } | { name: 'employee'; id: string } | { name: 'calendar' } | { name: 'rules' } | { name: 'timeOff' };
 export type RouteName = Route['name'];
 
 /** Every route must declare the permission required to open it (ADR-e8f59ca). */
@@ -12,6 +12,7 @@ export const routePermissions: Record<RouteName, Permission> = {
   employee: 'employees:edit',
   calendar: 'calendar:view',
   rules: 'rules:edit',
+  timeOff: 'employees:view',
 };
 
 export function parseHash(hash: string): Route {
@@ -19,6 +20,7 @@ export function parseHash(hash: string): Route {
   if (path === '/employees') return { name: 'employees' };
   if (path === '/calendar') return { name: 'calendar' };
   if (path === '/rules') return { name: 'rules' };
+  if (path === '/time-off') return { name: 'timeOff' };
   const match = /^\/employees\/([^/]+)$/.exec(path);
   if (match?.[1]) return { name: 'employee', id: decodeURIComponent(match[1]) };
   return { name: 'home' };
@@ -34,6 +36,8 @@ export function href(route: Route): string {
       return '#/calendar';
     case 'rules':
       return '#/rules';
+    case 'timeOff':
+      return '#/time-off';
     case 'employee':
       return `#/employees/${encodeURIComponent(route.id)}`;
   }
