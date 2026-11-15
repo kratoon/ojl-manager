@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { localDataPlugin } from './tools/dataPlugin';
+import { localDataPlugin } from './tools/dataPlugin.ts';
 
 // GitHub Pages ready (ADR): the base path is configurable and defaults to relative,
 // so the static build works at any path. Example for project pages:

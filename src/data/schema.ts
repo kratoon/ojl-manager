@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { compareShifts, isoDatePattern, shiftKeyPattern } from '../schedule/shift';
+import { compareShifts, isoDatePattern, shiftKeyPattern } from '../schedule/shift.ts';
 
 // Everything added after the first version has a default, so older data files keep loading.
 
