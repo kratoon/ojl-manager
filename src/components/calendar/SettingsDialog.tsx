@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { patternSettingsSchema, type Company } from '../../data/schema';
+import type { Company } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import {
   settingRanges,
-  validateMonday,
   validateNumber,
   type NumberSetting,
   type SettingError,
@@ -16,7 +15,7 @@ interface SettingsDialogProps {
   onClose(): void;
 }
 
-type Values = Record<NumberSetting, string> & { anchor: string };
+type Values = Record<NumberSetting, string>;
 
 /** The values of a fresh data file. */
 const defaults: Values = {
@@ -25,7 +24,6 @@ const defaults: Values = {
   kindBalanceWeight: String(settingRanges.kindBalanceWeight.fallback),
   fairnessCap: String(settingRanges.fairnessCap.fallback),
   compensationGap: String(settingRanges.compensationGap.fallback),
-  anchor: patternSettingsSchema.parse({}).anchor,
 };
 
 function initial(company: Company): Values {
@@ -35,7 +33,6 @@ function initial(company: Company): Values {
     kindBalanceWeight: String(company.kindBalanceWeight),
     fairnessCap: String(company.fairnessCap),
     compensationGap: String(company.pattern.compensationGap),
-    anchor: company.pattern.anchor,
   };
 }
 
@@ -50,20 +47,18 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
   const fill = (template: string, vars: Record<string, string>) =>
     Object.entries(vars).reduce((text, [k, v]) => text.replaceAll(`{${k}}`, v), template);
 
-  const errors: Record<keyof Values, SettingError | null> = {
+  const errors: Record<NumberSetting, SettingError | null> = {
     patternWeight: validateNumber(values.patternWeight, settingRanges.patternWeight),
     fairnessWeight: validateNumber(values.fairnessWeight, settingRanges.fairnessWeight),
     kindBalanceWeight: validateNumber(values.kindBalanceWeight, settingRanges.kindBalanceWeight),
     fairnessCap: validateNumber(values.fairnessCap, settingRanges.fairnessCap),
     compensationGap: validateNumber(values.compensationGap, settingRanges.compensationGap),
-    anchor: validateMonday(values.anchor),
   };
   const valid = Object.values(errors).every((e) => e === null);
 
   const errorText = (key: NumberSetting, error: SettingError) => {
     const r = settingRanges[key];
     if (error === 'range') return fill(t.settings.errorRange, { min: fmt.format(r.min), max: fmt.format(r.max) });
-    if (error === 'monday') return t.settings.errorMonday;
     return t.settings.errorRequired;
   };
 
@@ -78,7 +73,6 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
         fairnessCap: Number(values.fairnessCap),
         pattern: {
           ...company.pattern,
-          anchor: values.anchor,
           weight: Number(values.patternWeight),
           compensationGap: Number(values.compensationGap),
         },
@@ -138,27 +132,6 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
           <legend>{t.settings.patternTitle}</legend>
           {numberField('patternWeight', t.settings.patternWeight, t.settings.patternWeightHelp, t.settings.patternWeightScale)}
           {numberField('compensationGap', t.settings.compensationGap, t.settings.compensationGapHelp, t.settings.compensationGapScale)}
-          <div className="setting">
-            <label className="field">
-              <span>{t.settings.patternAnchor}</span>
-              <input
-                type="date"
-                value={values.anchor}
-                aria-invalid={errors.anchor !== null}
-                aria-describedby="anchor-help"
-                onChange={(e) => setValues((v) => ({ ...v, anchor: e.target.value }))}
-              />
-            </label>
-            <div id="anchor-help" className="setting__help">
-              <p className="hint">{t.settings.patternAnchorHelp}</p>
-              <p className="hint">{t.settings.patternAnchorScale}</p>
-            </div>
-            {errors.anchor && (
-              <p role="alert" className="error">
-                {errors.anchor === 'monday' ? t.settings.errorMonday : t.settings.errorRequired}
-              </p>
-            )}
-          </div>
         </fieldset>
 
         <fieldset className="vacations">

@@ -46,7 +46,6 @@ const cs = {
     range: 'Povolený rozsah: {min} až {max}, výchozí hodnota: {default}.',
     errorRequired: 'Zadejte platnou hodnotu.',
     errorRange: 'Hodnota musí být mezi {min} a {max}.',
-    errorMonday: 'Datum musí být pondělí.',
     weightsTitle: 'Váhy',
     weightsHint:
       'Váhy se porovnávají mezi sebou: kritérium s vyšší váhou rozhoduje, když si kritéria odporují. Stejné váhy znamenají stejný vliv. Důležitý je poměr, ne samotná čísla.',
@@ -56,10 +55,6 @@ const cs = {
       'Jak silně se generátor drží střídání dvojic (pá–ne noc, st–čt den, po–út noc, pá–ne den). Vzorec je hlavní model a generátor se k němu vždy vrací.',
     patternWeightScale:
       'Vyšší než váha spravedlnosti: vzorec vyhrává (doporučeno). Stejná: stejný vliv. Nižší: vyhrává vyrovnání počtu směn.',
-    patternAnchor: 'Začátek vzorce (pondělí)',
-    patternAnchorHelp:
-      'Pondělí, kterým začíná první blok vzorce. Určuje, která dvojice je na řadě, jen pokud v okolí nejsou zamčené směny: jinak generátor navazuje na zamčené směny.',
-    patternAnchorScale: 'Datum musí být pondělí.',
     fairnessTitle: 'Spravedlivé rozdělení směn',
     fairnessWeight: 'Váha spravedlivého rozdělení směn',
     fairnessWeightHelp: 'Jak silně generátor vyrovnává celkový počet směn mezi zaměstnanci, například po dovolené nebo nemoci.',
@@ -226,7 +221,6 @@ const en: Labels = {
     range: 'Allowed range: {min} to {max}, default: {default}.',
     errorRequired: 'Enter a valid value.',
     errorRange: 'The value must be between {min} and {max}.',
-    errorMonday: 'The date must be a Monday.',
     weightsTitle: 'Weights',
     weightsHint:
       'Weights are compared with each other: the criterion with the higher weight wins when criteria disagree. Equal weights mean equal influence. The ratio matters, not the numbers themselves.',
@@ -236,10 +230,6 @@ const en: Labels = {
       'How strongly the generator keeps to the rotation of the pairs (FRI-SUN night, WED-THU day, MON-TUE night, FRI-SUN day). The rotation is the main model and the generator always returns to it.',
     patternWeightScale:
       'Higher than the fairness weight: the rotation wins (recommended). Equal: equal influence. Lower: evening out the number of shifts wins.',
-    patternAnchor: 'Pattern start (Monday)',
-    patternAnchorHelp:
-      'The Monday on which the first block of the rotation starts. It decides which pair is up only when there are no locked shifts nearby: otherwise the generator continues from the locked shifts.',
-    patternAnchorScale: 'The date must be a Monday.',
     fairnessTitle: 'Fair shift distribution',
     fairnessWeight: 'Weight of fair shift distribution',
     fairnessWeightHelp: 'How strongly the generator evens out the total number of shifts between employees, for example after PTO or sick days.',
