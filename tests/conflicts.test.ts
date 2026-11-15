@@ -77,3 +77,39 @@ describe('regenerating over locked conflicts', () => {
     expect(assignments['2026-12-07:day']?.map((a) => a.employeeId)).toEqual(['e1', 'e2']);
   });
 });
+
+describe('seat order when regenerating', () => {
+  const range = { from: sh('2026-12-01'), to: sh('2026-12-27', 'night') };
+  const ids = (a: Record<string, { employeeId: string }[]>, key: string) => (a[key] ?? []).map((x) => x.employeeId);
+
+  it('puts the replacement in the freed seat, whichever seat that is', () => {
+    const first = dataSchema.parse({
+      employees: team(vacation),
+      assignments: { '2026-12-07:day': [{ employeeId: 'e1', source: 'manual' }, { employeeId: 'e2', source: 'manual' }] },
+    });
+    const a = ids(generate({ data: first, range, startAt: range.from, replaceConflicting: true }).assignments, '2026-12-07:day');
+    expect(a[1]).toBe('e2'); // the other employee stays second
+    expect(a[0]).not.toBe('e1');
+
+    const second = dataSchema.parse({
+      employees: team(vacation),
+      assignments: { '2026-12-07:day': [{ employeeId: 'e2', source: 'manual' }, { employeeId: 'e1', source: 'manual' }] },
+    });
+    const b = ids(generate({ data: second, range, startAt: range.from, replaceConflicting: true }).assignments, '2026-12-07:day');
+    expect(b[0]).toBe('e2'); // and stays first
+    expect(b[1]).not.toBe('e1');
+  });
+
+  it('does not reorder employees that stay, even when their name order differs from the seat order', () => {
+    const plain = generate({ data: dataSchema.parse({ employees: team() }), range, startAt: range.from }).assignments;
+    const flipped = Object.fromEntries(Object.entries(plain).map(([k, l]) => [k, [...l].reverse()]));
+    const again = generate({ data: dataSchema.parse({ employees: team(), assignments: flipped }), range, startAt: range.from }).assignments;
+    expect(again).toEqual(flipped);
+  });
+
+  it('lists a shift that was empty in the fixed employee order', () => {
+    const { assignments } = generate({ data: dataSchema.parse({ employees: team() }), range, startAt: range.from });
+    const two = ids(assignments, '2026-12-01:day');
+    expect([...two].sort()).toEqual(two);
+  });
+});
