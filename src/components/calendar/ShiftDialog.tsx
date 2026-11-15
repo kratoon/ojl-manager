@@ -123,7 +123,7 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
                     onChange={(e) => choose(seat, e.target.value)}
                   >
                     <option value="">{t.calendar.noEmployee}</option>
-                    <option value={TEMPORARY_ID}>{t.calendar.temporary}</option>
+                    <option value={TEMPORARY_ID}>{t.calendar.temporaryOption}</option>
                     {employees
                       .filter((e) => !forbidden.includes(e.id) && (!chosen.includes(e.id) || e.id === value))
                       .map((e) => (

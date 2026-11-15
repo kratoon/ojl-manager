@@ -714,6 +714,10 @@ button.slot:focus-visible {
   outline-offset: -2px;
 }
 
+.slot__name--temporary {
+  font-style: italic;
+}
+
 .slot__name {
   overflow: hidden;
   font-size: 0.75rem;

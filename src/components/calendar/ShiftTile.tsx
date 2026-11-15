@@ -55,7 +55,7 @@ export function ShiftTile({ part, entries, seats, closed, changed, previous, out
             const warningText = warnings.map((w) => t.reasons[w]).join(', ');
             return (
               <span key={`${assignment.employeeId}-${index}`} className="slot__seat">
-                <span className="slot__name" title={label}>
+                <span className={assignment.employeeId === TEMPORARY_ID ? 'slot__name slot__name--temporary' : 'slot__name'} title={label}>
                   {label}
                 </span>
                 {warnings.length > 0 && (
