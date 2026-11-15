@@ -36,10 +36,13 @@ export function RegenerateDialog({ minStart, pairing, conflicts, onPreview, onCl
         <ShiftField label={t.calendar.regenerateStart} value={start} onChange={setStart} minDate={minStart.date} />
         <p className="hint">{t.calendar.regenerateHint}</p>
         {lockedConflicts > 0 && (
-          <label className="check">
-            <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
-            <span>{t.calendar.replaceConflicts.replace('{count}', String(lockedConflicts))}</span>
-          </label>
+          <>
+            <label className="check">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+              <span>{t.calendar.replaceConflicts.replace('{count}', String(lockedConflicts))}</span>
+            </label>
+            <p className="hint">{t.calendar.replaceConflictsHint}</p>
+          </>
         )}
         {!pairing.ok && (
           <p role="alert" className="error">
