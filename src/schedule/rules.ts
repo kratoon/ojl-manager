@@ -37,6 +37,11 @@ export interface RuleContext {
   pattern?: PatternModel;
   /** Expected shifts by now minus shifts worked so far (ADR-aaa3ccd). Positive = behind. */
   gap: number;
+  /**
+   * The employee is making up missed shifts (ADR-a1cb97d): they started when they fell far enough behind the
+   * others and continue until the gap is closed, so the rotation is not held against them meanwhile.
+   */
+  compensating?: boolean;
 }
 
 export interface Rule {
@@ -142,16 +147,20 @@ const fairnessRule: Rule = {
 };
 
 /**
- * Long/short week rotation as a soft preference: 10 when the employee's pair is on pattern for this
- * shift, 1 otherwise. No opinion without a pattern or for an employee without a position.
+ * Long/short week rotation as the strongest soft preference: 10 when the employee's pair is on pattern for
+ * this shift, 1 otherwise. No opinion without a pattern or for an employee without a position. An employee
+ * who is compensating (far behind the others after PTO) gets no opinion off pattern, so fairness decides and
+ * they are brought back up to date. Once the gap is closed the rotation wins again.
  */
 const patternRule: Rule = {
   id: 'pattern',
   weight: (data) => data.company.pattern.weight,
-  evaluate: ({ employee, shift, pattern }) => {
+  evaluate: ({ employee, shift, pattern, compensating }) => {
     if (!pattern) return null;
     const on = onPattern(pattern, employee.id, shift);
-    return on === null ? null : { score: on ? 10 : 1, reason: 'pattern' };
+    if (on === null) return null;
+    if (!on && compensating) return null;
+    return { score: on ? 10 : 1, reason: 'pattern' };
   },
 };
 

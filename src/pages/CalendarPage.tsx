@@ -12,6 +12,7 @@ import type { Assignment, Data, Employee } from '../data/schema';
 import { useLocale, useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
 import { compareEmployees, generate, type GenerateResult } from '../schedule/generator';
+import { isMonthLocked, setMonthLock } from '../schedule/locks';
 import { pairingProblems } from '../schedule/pattern';
 import { brokenRules, companyClosedReason, type ReasonCode } from '../schedule/rules';
 import { compareShifts, shiftKey, toIsoDate, type DayPart, type Shift } from '../schedule/shift';
@@ -201,7 +202,22 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         const grid = monthGrid(year, month);
         return (
           <section key={`${year}-${month}`} className="month" ref={isFocus ? currentRef : undefined}>
-            <h2 className="month__title">{monthName.format(new Date(year, month, 1))}</h2>
+            <div className="month__header">
+              <h2 className="month__title">{monthName.format(new Date(year, month, 1))}</h2>
+              {canEdit && !preview && (
+                <button
+                  type="button"
+                  className="button"
+                  disabled={!Object.keys(data.assignments).some((k) => k.startsWith(monthKey(year, month)))}
+                  onClick={() => {
+                    const prefix = monthKey(year, month);
+                    void save({ ...data, assignments: setMonthLock(data.assignments, prefix, !isMonthLocked(data.assignments, prefix)) });
+                  }}
+                >
+                  {isMonthLocked(data.assignments, monthKey(year, month)) ? t.calendar.unlockMonth : t.calendar.lockMonth}
+                </button>
+              )}
+            </div>
             <div className="month__grid" role="grid">
               <div className="week week--head" role="row">
                 {weekdays.map((name) => (

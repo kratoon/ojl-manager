@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Data } from '../../data/schema';
 import { useLocale, useT } from '../../i18n/I18nProvider';
 import { compareEmployees } from '../../schedule/generator';
+import { clearShift, unlockShift } from '../../schedule/locks';
 import { brokenRules } from '../../schedule/rules';
 import { shiftKey, type Shift } from '../../schedule/shift';
 import { Modal } from '../Modal';
@@ -65,20 +66,21 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
     return '';
   }
 
-  /** Locks the chosen employees on this shift (every filled seat becomes manual). */
-  async function persist(ids: string[], keepAuto = false) {
-    const assignments = { ...data.assignments };
-    const entries = ids.filter(Boolean).map((employeeId) => ({ employeeId, source: 'manual' as const }));
-    // Clearing manual seats keeps the automatic ones.
-    const kept = keepAuto ? current.filter((a) => a.source === 'auto') : [];
-    const list = keepAuto ? kept : entries;
-    if (list.length > 0) assignments[key] = list;
-    else delete assignments[key];
+  async function commit(assignments: Data['assignments']) {
     try {
       await onSave({ ...data, assignments, forbiddenShifts: draftForbidden() });
     } catch {
       setError(true);
     }
+  }
+
+  /** Locks the chosen employees on this shift (every filled seat becomes manual). */
+  async function persist(ids: string[]) {
+    const assignments = { ...data.assignments };
+    const entries = ids.filter(Boolean).map((employeeId) => ({ employeeId, source: 'manual' as const }));
+    if (entries.length > 0) assignments[key] = entries;
+    else delete assignments[key];
+    await commit(assignments);
   }
 
   const partLabel = shift.part === 'day' ? t.calendar.day : t.calendar.night;
@@ -174,8 +176,13 @@ export function ShiftDialog({ shift, data, onSave, onClose }: ShiftDialogProps) 
         )}
         <div className="form__actions">
           {current.some((a) => a.source === 'manual') && (
-            <button type="button" className="button button--danger" onClick={() => void persist([], true)}>
-              {t.calendar.clearManual}
+            <button type="button" className="button" onClick={() => void commit(unlockShift(data.assignments, key))}>
+              {t.calendar.unlockShift}
+            </button>
+          )}
+          {current.length > 0 && (
+            <button type="button" className="button button--danger" onClick={() => void commit(clearShift(data.assignments, key))}>
+              {t.calendar.clearShift}
             </button>
           )}
           <button type="button" className="button" onClick={onClose}>

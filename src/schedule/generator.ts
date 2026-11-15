@@ -1,8 +1,8 @@
 import type { Assignment, Data, Employee, Vacation } from '../data/schema';
-import { buildPattern } from './pattern';
+import { buildPattern, type PatternEvidence } from './pattern';
 import { byString, compareEmployees } from './order';
 import { companyClosedReason, defaultRules, evaluate, type ReasonCode, type Rule } from './rules';
-import { compareShifts, shiftKey, shiftsBetween, type Shift, type ShiftKey } from './shift';
+import { compareShifts, shiftKey, shiftsBetween, toIsoDate, type Shift, type ShiftKey } from './shift';
 
 export { compareEmployees };
 
@@ -42,12 +42,33 @@ export function countsFor(employee: Employee, shift: Shift): boolean {
   return !employee.vacations.some((v) => !v.compensate && inVacation(v, shift));
 }
 
+const EVIDENCE_DAYS = 14;
+
+/**
+ * Shifts that stay as they are and show where the rotation stands: two weeks around the start, locked ones
+ * on both sides and automatic ones only before the start (the others are about to be regenerated).
+ */
+function patternEvidence(kept: Map<ShiftKey, Assignment[]>, startAt: Shift): PatternEvidence[] {
+  const [y, m, d] = startAt.date.split('-').map(Number) as [number, number, number];
+  const from = toIsoDate(new Date(y, m - 1, d - EVIDENCE_DAYS));
+  const to = toIsoDate(new Date(y, m - 1, d + EVIDENCE_DAYS));
+  const evidence: PatternEvidence[] = [];
+  for (const [key, list] of kept) {
+    const [date, part] = key.split(':') as [string, Shift['part']];
+    if (date < from || date > to) continue;
+    const shift = { date, part };
+    const before = compareShifts(shift, startAt) < 0;
+    const employeeIds = list.filter((a) => before || a.source === 'manual').map((a) => a.employeeId);
+    if (employeeIds.length > 0) evidence.push({ shift, employeeIds });
+  }
+  return evidence;
+}
+
 export function generate({ data, range, startAt, rules = defaultRules }: GenerateInput): GenerateResult {
   const seats = data.company.seatsPerShift;
   const orderedRules = [...rules].sort((a, b) => byString(a.id, b.id));
   const employees = [...data.employees].sort(compareEmployees);
   const employeeRank = new Map(employees.map((e, i) => [e.id, i]));
-  const pattern = buildPattern(employees, data.company.pattern.anchor);
   const shifts = shiftsBetween(range.from, range.to);
   const workable = shifts.filter((s) => companyClosedReason(data, s) === null);
 
@@ -65,9 +86,14 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     if (entries.length > 0) kept.set(key, entries);
   }
 
+  const pattern = buildPattern(employees, data.company.pattern.anchor, patternEvidence(kept, startAt));
+
   const worked = new Map(employees.map((e) => [e.id, 0]));
   const counting = new Map(employees.map((e) => [e.id, 0]));
   const unfilled: Unfilled[] = [];
+  const compensatingIds = new Set<string>();
+  /** Expected shifts by now minus shifts worked so far. Positive = behind. */
+  const gapOf = (e: Employee) => k * (counting.get(e.id) ?? 0) - (worked.get(e.id) ?? 0);
   const assignedTo = (s: Shift): readonly string[] => kept.get(shiftKey(s))?.map((a) => a.employeeId) ?? [];
 
   for (const shift of shifts) {
@@ -77,6 +103,14 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     const initialIds = (kept.get(key) ?? []).map((a) => a.employeeId);
 
     if (!closed && compareShifts(shift, startAt) >= 0) {
+      // Compensation starts when an employee is `compensationGap` behind the others and ends when caught up.
+      const inWindow = employees.filter((e) => countsFor(e, shift));
+      const meanGap = inWindow.length === 0 ? 0 : inWindow.reduce((sum, e) => sum + gapOf(e), 0) / inWindow.length;
+      for (const e of inWindow) {
+        const behind = gapOf(e) - meanGap;
+        if (behind >= data.company.pattern.compensationGap) compensatingIds.add(e.id);
+        else if (behind <= 0) compensatingIds.delete(e.id);
+      }
       const reasonSet = new Set<ReasonCode>();
       let missing = 0;
       for (let seat = initial; seat < seats; seat++) {
@@ -84,8 +118,9 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
         const evaluated = employees
           .filter((e) => !taken.has(e.id))
           .map((employee) => {
-            const gap = k * (counting.get(employee.id) ?? 0) - (worked.get(employee.id) ?? 0);
-            return { employee, gap, ...evaluate(orderedRules, { data, employee, shift, assignedTo, gap, pattern }) };
+            const gap = gapOf(employee);
+            const compensating = compensatingIds.has(employee.id);
+            return { employee, gap, ...evaluate(orderedRules, { data, employee, shift, assignedTo, gap, compensating, pattern }) };
           });
         let candidates = evaluated.filter((c) => c.score > 0);
         // Fairness cap: skip employees too far above expected, unless that would leave nobody.

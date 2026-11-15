@@ -198,3 +198,68 @@ describe('generate with two seats and the pattern', () => {
     expect(dataSchema.safeParse({ company: { pattern: { anchor: '2026-11-02' } } }).success).toBe(true);
   });
 });
+
+describe('rotation follows what is locked', () => {
+  // Locked week like the real one: e1+e2 work Fri-Sun day and Wed-Thu night, e5+e6 Mon-Tue day.
+  const locked = (employeeIds: string[], dates: string[], part: 'day' | 'night') =>
+    Object.fromEntries(dates.map((d) => [`${d}:${part}`, employeeIds.map((employeeId) => ({ employeeId, source: 'manual' }))]));
+  const week = {
+    ...locked(['e1', 'e2'], ['2026-11-13', '2026-11-14', '2026-11-15'], 'day'),
+    ...locked(['e3', 'e4'], ['2026-11-13', '2026-11-14', '2026-11-15'], 'night'),
+    ...locked(['e5', 'e6'], ['2026-11-16', '2026-11-17'], 'day'),
+    ...locked(['e7', 'e8'], ['2026-11-16', '2026-11-17'], 'night'),
+    ...locked(['e3', 'e4'], ['2026-11-18', '2026-11-19'], 'day'),
+    ...locked(['e1', 'e2'], ['2026-11-18', '2026-11-19'], 'night'),
+  };
+  const full = { from: sh('2026-11-01'), to: sh('2026-12-31', 'night') };
+  const ids = (a: Record<string, { employeeId: string }[]>, key: string) => (a[key] ?? []).map((x) => x.employeeId).sort();
+
+  it('continues the cycle: night, then next WED+THU day, MON+TUE night, FRI-SUN day', () => {
+    const data = dataFor(team(8), (d) => (d.assignments = week));
+    const { assignments } = generate({ data, range: full, startAt: sh('2026-11-16') });
+    // e3+e4 had FRI-SUN night; then WED+THU day (locked), then MON+TUE night, then FRI-SUN day.
+    expect(ids(assignments, '2026-11-23:night')).toEqual(['e3', 'e4']);
+    expect(ids(assignments, '2026-11-27:day')).toEqual(['e3', 'e4']);
+    expect(ids(assignments, '2026-11-29:day')).toEqual(['e3', 'e4']);
+    // e5+e6 (MON+TUE day) continue with FRI-SUN night, WED+THU day.
+    expect(ids(assignments, '2026-11-20:night')).toEqual(['e5', 'e6']);
+    expect(ids(assignments, '2026-11-25:day')).toEqual(['e5', 'e6']);
+    // The locked days are untouched.
+    for (const [key, list] of Object.entries(week)) expect((assignments as Record<string, unknown>)[key]).toEqual(list);
+  });
+
+  it('does not depend on the anchor being right', () => {
+    const data = dataFor(team(8), (d) => {
+      d.assignments = week;
+      d.company = { pattern: { anchor: '2026-11-09' } };
+    });
+    const { assignments } = generate({ data, range: full, startAt: sh('2026-11-16') });
+    expect(ids(assignments, '2026-11-20:night')).toEqual(['e5', 'e6']);
+  });
+});
+
+describe('compensation breaks the pattern and the pair returns to it', () => {
+  const long = { from: sh('2026-11-02'), to: sh('2027-03-31', 'night') };
+  const vacation = { id: 'v', from: sh('2026-11-02'), to: sh('2026-11-22', 'night'), compensate: true };
+  const make = (compensate: boolean) =>
+    dataFor(
+      team(8).map((e) => (e.id === 'e1' ? { ...e, vacations: [{ ...vacation, compensate }] } : e)),
+    );
+  const count = (a: Record<string, { employeeId: string }[]>, id: string, from: string, to: string) =>
+    Object.entries(a).filter(([k]) => k >= from && k <= to + ':z').flatMap(([, l]) => l).filter((x) => x.employeeId === id).length;
+
+  it('gives the returning employee extra shifts only when compensate is on', () => {
+    const on = generate({ data: make(true), range: long, startAt: long.from }).assignments;
+    const off = generate({ data: make(false), range: long, startAt: long.from }).assignments;
+    expect(count(on, 'e1', '2026-11-23', '2027-03-31')).toBeGreaterThan(count(off, 'e1', '2026-11-23', '2027-03-31'));
+  });
+
+  it('is back on the pattern for the last weeks', () => {
+    const { assignments } = generate({ data: make(true), range: long, startAt: long.from });
+    for (const shift of shiftsBetween(sh('2027-03-15'), long.to)) {
+      const position = [0, 1, 2, 3].find((p) => patternWorks(p, shift, anchor)) as number;
+      const expected = [`e${2 * position + 1}`, `e${2 * position + 2}`];
+      expect((assignments[shiftKey(shift)] ?? []).map((a) => a.employeeId).sort(), shiftKey(shift)).toEqual(expected);
+    }
+  });
+});
