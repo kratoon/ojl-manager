@@ -35,11 +35,45 @@ const cs = {
     maxInRow: 'Max. počet stejných směn v řadě',
     dayNightNote: 'Denní a noční směna téhož zaměstnance těsně za sebou není povolena. Výjimku lze nastavit u zaměstnance.',
     seatsPerShift: 'Počet zaměstnanců na směnu',
+  },
+  settings: {
+    button: 'Nastavení plánování',
+    title: 'Nastavení plánování',
+    reset: 'Obnovit výchozí hodnoty',
+    intro:
+      'Tato čísla určují, jak generátor volí zaměstnance. Změna se projeví až při dalším přegenerování kalendáře, zamčené směny zůstanou beze změny.',
+    range: 'Povolený rozsah: {min} až {max}, výchozí hodnota: {default}.',
+    errorRequired: 'Zadejte platnou hodnotu.',
+    errorRange: 'Hodnota musí být mezi {min} a {max}.',
+    errorMonday: 'Datum musí být pondělí.',
+    weightsTitle: 'Váhy',
+    weightsHint:
+      'Váhy se porovnávají mezi sebou: kritérium s vyšší váhou rozhoduje, když si kritéria odporují. Stejné váhy znamenají stejný vliv. Důležitý je poměr, ne samotná čísla.',
     patternTitle: 'Vzorec dlouhý/krátký týden',
-    patternAnchor: 'Začátek vzorce (pondělí)',
     patternWeight: 'Váha vzorce',
+    patternWeightHelp:
+      'Jak silně se generátor drží střídání dvojic (pá–ne noc, st–čt den, po–út noc, pá–ne den). Vzorec je hlavní model a generátor se k němu vždy vrací.',
+    patternWeightScale:
+      'Vyšší než váha spravedlnosti: vzorec vyhrává (doporučeno). Stejná: stejný vliv. Nižší: vyhrává vyrovnání počtu směn.',
+    patternAnchor: 'Začátek vzorce (pondělí)',
+    patternAnchorHelp:
+      'Pondělí, kterým začíná první blok vzorce. Určuje, která dvojice je na řadě, jen pokud v okolí nejsou zamčené směny: jinak generátor navazuje na zamčené směny.',
+    patternAnchorScale: 'Datum musí být pondělí.',
+    fairnessTitle: 'Spravedlivé rozdělení směn',
     fairnessWeight: 'Váha spravedlivého rozdělení směn',
+    fairnessWeightHelp: 'Jak silně generátor vyrovnává celkový počet směn mezi zaměstnanci, například po dovolené nebo nemoci.',
+    fairnessWeightScale:
+      'Vyšší číslo: vyrovnanější počty směn, ale častější odchylky od vzorce. Nižší číslo: pevnější vzorec, větší rozdíly v počtech.',
     fairnessCap: 'Max. náskok zaměstnance před očekávaným počtem směn',
+    fairnessCapHelp:
+      'Zaměstnanec, který je o tolik směn nad očekávaným počtem, dostane další směnu, jen když nikdo jiný nemůže.',
+    fairnessCapScale:
+      'Počet směn. 0: nikdo nesmí být nad očekávaným počtem. 2: malá rezerva (výchozí). 10: omezení je prakticky vypnuté.',
+    compensationGap: 'Náskok ostatních, od kterého se kompenzuje',
+    compensationGapHelp:
+      'Když zaměstnanec zaostává za průměrem o tolik směn (po dovolené s kompenzací), generátor ho smí zařadit mimo vzorec, dokud zaostávání nedožene. Pak se vrací ke vzorci.',
+    compensationGapScale:
+      'Počet směn. Nižší číslo: rychlejší kompenzace, ale vzorec se naruší dřív a častěji. Vyšší číslo: vzorec drží déle, zaostávání se dohání později.',
   },
   shift: {
     date: 'Datum',
@@ -175,11 +209,45 @@ const en: Labels = {
     maxInRow: 'Max shifts of the same kind in a row',
     dayNightNote: 'A day and a night shift back to back for the same employee is not allowed. An exception can be set per employee.',
     seatsPerShift: 'Employees per shift',
+  },
+  settings: {
+    button: 'Scheduling settings',
+    title: 'Scheduling settings',
+    reset: 'Reset to defaults',
+    intro:
+      'These numbers decide how the generator picks employees. A change takes effect the next time the calendar is regenerated; locked shifts stay as they are.',
+    range: 'Allowed range: {min} to {max}, default: {default}.',
+    errorRequired: 'Enter a valid value.',
+    errorRange: 'The value must be between {min} and {max}.',
+    errorMonday: 'The date must be a Monday.',
+    weightsTitle: 'Weights',
+    weightsHint:
+      'Weights are compared with each other: the criterion with the higher weight wins when criteria disagree. Equal weights mean equal influence. The ratio matters, not the numbers themselves.',
     patternTitle: 'Long/short week pattern',
-    patternAnchor: 'Pattern start (Monday)',
     patternWeight: 'Pattern weight',
+    patternWeightHelp:
+      'How strongly the generator keeps to the rotation of the pairs (FRI-SUN night, WED-THU day, MON-TUE night, FRI-SUN day). The rotation is the main model and the generator always returns to it.',
+    patternWeightScale:
+      'Higher than the fairness weight: the rotation wins (recommended). Equal: equal influence. Lower: evening out the number of shifts wins.',
+    patternAnchor: 'Pattern start (Monday)',
+    patternAnchorHelp:
+      'The Monday on which the first block of the rotation starts. It decides which pair is up only when there are no locked shifts nearby: otherwise the generator continues from the locked shifts.',
+    patternAnchorScale: 'The date must be a Monday.',
+    fairnessTitle: 'Fair shift distribution',
     fairnessWeight: 'Weight of fair shift distribution',
+    fairnessWeightHelp: 'How strongly the generator evens out the total number of shifts between employees, for example after PTO or sick days.',
+    fairnessWeightScale:
+      'Higher: more even shift counts but more deviations from the rotation. Lower: a firmer rotation, bigger differences in counts.',
     fairnessCap: 'Max lead of an employee over the expected number of shifts',
+    fairnessCapHelp:
+      'An employee who is this many shifts above the expected number only gets another shift when nobody else can take it.',
+    fairnessCapScale:
+      'Number of shifts. 0: nobody may be above the expected number. 2: a small margin (default). 10: the limit is practically off.',
+    compensationGap: 'Gap behind the others that starts compensation',
+    compensationGapHelp:
+      'When an employee is this many shifts behind the average (after PTO with compensation), the generator may place them off the rotation until the gap is closed. Then it returns to the rotation.',
+    compensationGapScale:
+      'Number of shifts. Lower: faster compensation, but the rotation is broken sooner and more often. Higher: the rotation holds longer and the gap is made up later.',
   },
   shift: {
     date: 'Date',
