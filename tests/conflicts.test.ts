@@ -47,34 +47,31 @@ describe('findConflicts', () => {
   });
 });
 
-describe('regenerating over locked conflicts', () => {
+describe('regenerating and locked conflicts', () => {
   const range = { from: sh('2026-12-01'), to: sh('2026-12-27', 'night') };
-  const data = dataSchema.parse({
-    employees: team(vacation),
-    assignments: {
-      '2026-12-07:day': [{ employeeId: 'e1', source: 'manual' }, { employeeId: 'e2', source: 'manual' }],
-      '2026-12-09:day': [{ employeeId: 'e3', source: 'manual' }],
-    },
-  });
+  const conflicting = (source: 'manual' | 'auto') =>
+    dataSchema.parse({
+      employees: team(vacation),
+      assignments: {
+        '2026-12-07:day': [{ employeeId: 'e1', source }, { employeeId: 'e2', source: 'manual' }],
+        '2026-12-09:day': [{ employeeId: 'e3', source: 'manual' }],
+      },
+    });
 
-  it('keeps a locked conflict by default, as before', () => {
-    const { assignments } = generate({ data, range, startAt: range.from });
+  it('never touches a locked conflict: the user unlocks it first', () => {
+    const { assignments } = generate({ data: conflicting('manual'), range, startAt: range.from });
     expect(assignments['2026-12-07:day']?.map((a) => a.employeeId)).toEqual(['e1', 'e2']);
   });
 
-  it('replaces only the conflicting locked employee when asked, and keeps other locks', () => {
-    const { assignments } = generate({ data, range, startAt: range.from, replaceConflicting: true });
+  it('fixes the conflict once it is unlocked, keeping the other lock', () => {
+    const data = conflicting('auto');
+    const { assignments } = generate({ data, range, startAt: range.from });
     const day = assignments['2026-12-07:day'] ?? [];
     expect(day).toHaveLength(2);
     expect(day.map((a) => a.employeeId)).not.toContain('e1');
     expect(day.find((a) => a.employeeId === 'e2')).toEqual({ employeeId: 'e2', source: 'manual' });
     expect(assignments['2026-12-09:day']?.find((a) => a.employeeId === 'e3')?.source).toBe('manual');
     expect(findConflicts({ ...data, assignments })).toEqual([]);
-  });
-
-  it('does not touch conflicts before the start', () => {
-    const { assignments } = generate({ data, range, startAt: sh('2026-12-10'), replaceConflicting: true });
-    expect(assignments['2026-12-07:day']?.map((a) => a.employeeId)).toEqual(['e1', 'e2']);
   });
 });
 
@@ -83,19 +80,12 @@ describe('seat order when regenerating', () => {
   const ids = (a: Record<string, { employeeId: string }[]>, key: string) => (a[key] ?? []).map((x) => x.employeeId);
 
   it('puts the replacement in the freed seat, whichever seat that is', () => {
-    const first = dataSchema.parse({
-      employees: team(vacation),
-      assignments: { '2026-12-07:day': [{ employeeId: 'e1', source: 'manual' }, { employeeId: 'e2', source: 'manual' }] },
-    });
-    const a = ids(generate({ data: first, range, startAt: range.from, replaceConflicting: true }).assignments, '2026-12-07:day');
+    const run = (list: { employeeId: string; source: 'auto' | 'manual' }[]) =>
+      ids(generate({ data: dataSchema.parse({ employees: team(vacation), assignments: { '2026-12-07:day': list } }), range, startAt: range.from }).assignments, '2026-12-07:day');
+    const a = run([{ employeeId: 'e1', source: 'auto' }, { employeeId: 'e2', source: 'manual' }]);
     expect(a[1]).toBe('e2'); // the other employee stays second
     expect(a[0]).not.toBe('e1');
-
-    const second = dataSchema.parse({
-      employees: team(vacation),
-      assignments: { '2026-12-07:day': [{ employeeId: 'e2', source: 'manual' }, { employeeId: 'e1', source: 'manual' }] },
-    });
-    const b = ids(generate({ data: second, range, startAt: range.from, replaceConflicting: true }).assignments, '2026-12-07:day');
+    const b = run([{ employeeId: 'e2', source: 'manual' }, { employeeId: 'e1', source: 'auto' }]);
     expect(b[0]).toBe('e2'); // and stays first
     expect(b[1]).not.toBe('e1');
   });

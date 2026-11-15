@@ -29,8 +29,8 @@ const mondayReference = (offset: number) => new Date(2024, 0, 1 + offset);
 interface Preview {
   result: GenerateResult;
   changed: Set<string>;
-  /** What the preview was made with, so it can be tweaked and run again. */
-  options: { startAt: Shift; replaceConflicting: boolean };
+  /** The start the preview was made with, so it can be tweaked and run again. */
+  startAt: Shift;
 }
 
 export function CalendarPage() {
@@ -120,8 +120,6 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
   // stale, for example after a vacation was added, and regenerating fixes it).
   const conflicts = useMemo(() => findConflicts({ ...data, assignments }), [data, assignments]);
   const warnings = useMemo(() => conflictIndex(conflicts), [conflicts]);
-  // The saved schedule's conflicts, also while a preview is shown (they decide what regenerating may replace).
-  const savedConflicts = useMemo(() => (preview ? findConflicts(data) : conflicts), [data, preview, conflicts]);
 
   // Day and night shifts per employee for each month (from the saved or the previewed schedule).
   const monthlyCounts = useMemo(() => {
@@ -169,10 +167,10 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     setPdfOpen(false);
   }
 
-  function showPreview(startAt: Shift, replaceConflicting: boolean) {
+  function showPreview(startAt: Shift) {
     // Never regenerate before tomorrow: today and the past are only changed by hand.
     if (compareShifts(startAt, tomorrowDay(today)) < 0) return;
-    const result = generate({ data, range, startAt, replaceConflicting });
+    const result = generate({ data, range, startAt });
     const before: Record<string, Assignment[]> = data.assignments;
     const after: Record<string, Assignment[]> = result.assignments;
     const people = (list: Assignment[] | undefined) => (list ?? []).map((a) => a.employeeId).sort().join(',');
@@ -180,7 +178,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
     for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
       if (people(before[key]) !== people(after[key])) changed.add(key);
     }
-    setPreview({ result, changed, options: { startAt, replaceConflicting } });
+    setPreview({ result, changed, startAt });
     setRegenerating(false);
   }
 
@@ -206,8 +204,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
           changed={preview.changed.size}
           unfilled={preview.result.unfilled}
           conflicts={conflicts}
-          savedConflicts={savedConflicts}
-          options={preview.options}
+          startAt={preview.startAt}
           minStart={tomorrowDay(today)}
           canRegenerate={pairing.ok}
           today={toIsoDate(today)}
@@ -355,7 +352,7 @@ function CalendarView({ data, save }: { data: Data; save(next: Data): Promise<vo
         />
       )}
       {canEdit && regenerating && (
-        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} conflicts={savedConflicts} onPreview={showPreview} onClose={() => setRegenerating(false)} />
+        <RegenerateDialog minStart={tomorrowDay(today)} pairing={pairing} onPreview={showPreview} onClose={() => setRegenerating(false)} />
       )}
     </section>
   );

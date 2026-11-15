@@ -20,8 +20,7 @@ const render = (conflicts: Conflict[]) =>
         changed={1}
         unfilled={[]}
         conflicts={conflicts}
-        savedConflicts={saved}
-        options={{ startAt: { date: '2026-11-16', part: 'day' }, replaceConflicting: true }}
+        startAt={{ date: '2026-11-16', part: 'day' }}
         minStart={{ date: '2026-11-16', part: 'day' }}
         canRegenerate
         today="2026-11-15"
@@ -40,8 +39,7 @@ describe('preview bar', () => {
     expect(html).toContain('Přegenerovat náhled');
     expect(html).toContain('Anna');
     expect(html).toContain('Bára');
-    // One locked conflict from the start on: that is the number next to the option.
-    expect(html).toContain('Nahradit i zamčené směny, které porušují pravidla (1)');
+    expect(html).not.toContain('Nahradit i zamčené');
   });
 
   it('says so when nothing is left', () => {
