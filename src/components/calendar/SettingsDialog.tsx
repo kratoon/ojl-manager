@@ -37,6 +37,79 @@ function initial(company: Company): Values {
   };
 }
 
+interface ScoreExampleProps {
+  pattern: number;
+  fairness: number;
+  kind: number;
+}
+
+/** The weighted average of rule scores, explained with two example employees and the weights being edited. */
+function ScoreExample({ pattern, fairness, kind }: ScoreExampleProps) {
+  const t = useT();
+  const locale = useLocale();
+  const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const fill = (template: string, vars: Record<string, string>) =>
+    Object.entries(vars).reduce((text, [k, v]) => text.replaceAll(`{${k}}`, v), template);
+
+  // Scores each rule gives the two employees in the example (1 to 10).
+  const rules = [
+    { name: t.settings.scoreRulePattern, weight: pattern, first: 10, second: 1 },
+    { name: t.settings.scoreRuleFairness, weight: fairness, first: 5, second: 10 },
+    { name: t.settings.scoreRuleKind, weight: kind, first: 5, second: 10 },
+  ];
+  const total = rules.reduce((sum, r) => sum + r.weight, 0);
+  const final = (pick: 'first' | 'second') => rules.reduce((sum, r) => sum + r[pick] * r.weight, 0) / total;
+  const a = final('first');
+  const b = final('second');
+  const winner = Math.abs(a - b) < 1e-9 ? t.settings.scoreTie : fill(t.settings.scoreWinner, { n: a > b ? '1' : '2' });
+
+  return (
+    <details className="score-help">
+      <summary>{t.settings.scoreTitle}</summary>
+      <p className="hint">{t.settings.scoreIntro}</p>
+      <p className="hint">{t.settings.scoreExample}</p>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th scope="col">{t.settings.scoreEmployee}</th>
+              {rules.map((r) => (
+                <th key={r.name} scope="col" className="num">
+                  {fill(t.settings.scoreColumn, { name: r.name, weight: fmt.format(r.weight) })}
+                </th>
+              ))}
+              <th scope="col" className="num">
+                {t.settings.scoreFinal}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {(['first', 'second'] as const).map((pick) => (
+              <tr key={pick}>
+                <th scope="row">{pick === 'first' ? t.settings.scoreOnPattern : t.settings.scoreOffPattern}</th>
+                {rules.map((r) => (
+                  <td key={r.name} className="num">
+                    {r[pick]}
+                  </td>
+                ))}
+                <td className="num">
+                  <strong>{fmt.format(final(pick))}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="hint">
+        {rules.map((r) => `${fmt.format(r.weight)}`).join(' + ')}
+        {` = ${fmt.format(total)}. `}
+        <strong>{winner}</strong>
+      </p>
+      <p className="hint">{t.settings.scoreNotes}</p>
+    </details>
+  );
+}
+
 /** Scheduling numbers of the generator with a help text, the allowed range and validation for each. */
 export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps) {
   const t = useT();
@@ -64,6 +137,9 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
     if (error === 'range') return fill(t.settings.errorRange, { min: fmt.format(r.min), max: fmt.format(r.max) });
     return t.settings.errorRequired;
   };
+
+  /** The number being typed when it is valid, otherwise the saved one: the example never shows nonsense. */
+  const weightOf = (key: NumberSetting, saved: number) => (errors[key] === null ? Number(values[key]) : saved);
 
   async function submit() {
     if (!valid) return;
@@ -130,6 +206,11 @@ export function SettingsDialog({ company, onSave, onClose }: SettingsDialogProps
       >
         <p className="hint">{t.settings.intro}</p>
         <p className="hint">{t.settings.weightsHint}</p>
+        <ScoreExample
+          pattern={weightOf('patternWeight', company.pattern.weight)}
+          fairness={weightOf('fairnessWeight', company.fairnessWeight)}
+          kind={weightOf('kindBalanceWeight', company.kindBalanceWeight)}
+        />
 
         <fieldset className="vacations">
           <legend>{t.settings.patternTitle}</legend>

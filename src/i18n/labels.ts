@@ -51,6 +51,23 @@ const cs = {
       'Váha vzorce by měla být větší než součet ostatních vah (spravedlnost + denní/noční směny). Jinak může generátor střídání dvojic porušit i bez kompenzace.',
     weightsHint:
       'Váhy se porovnávají mezi sebou: kritérium s vyšší váhou rozhoduje, když si kritéria odporují. Stejné váhy znamenají stejný vliv. Důležitý je poměr, ne samotná čísla. Výchozí poměr: vzorec 40, spravedlnost 20, denní/noční směny 10.',
+    scoreTitle: 'Jak se počítá skóre',
+    scoreIntro:
+      'Pro každou směnu a každého zaměstnance se vyhodnotí všechna pravidla. Každé pravidlo dá skóre od 1 do 10 a jeho váha určuje, jak moc se jeho skóre počítá. Výsledné skóre je vážený průměr: součet (skóre × váha) dělený součtem vah. Vybere se zaměstnanec s nejvyšším skóre. Nerozhoduje tedy jen pravidlo s nejvyšší vahou a váhy se nesčítají jako hlasy.',
+    scoreExample:
+      'Příklad se skutečnými vahami z tohoto nastavení. Zaměstnanec 1 je podle vzorce, zaměstnanec 2 je mimo vzorec, ale pravidla pro spravedlnost a denní/noční směny ho silně preferují:',
+    scoreEmployee: 'Zaměstnanec',
+    scoreRulePattern: 'Vzorec',
+    scoreRuleFairness: 'Spravedlnost',
+    scoreRuleKind: 'Den/noc',
+    scoreOnPattern: '1: podle vzorce',
+    scoreOffPattern: '2: mimo vzorec',
+    scoreColumn: '{name} (váha {weight})',
+    scoreFinal: 'Výsledné skóre',
+    scoreWinner: 'Vybrán bude zaměstnanec {n}.',
+    scoreTie: 'Skóre je stejné: vybere se ten, kdo je první podle jména.',
+    scoreNotes:
+      'Navíc: pravidla, která porušují tvrdá omezení (dovolená, max. počet směn v řadě, denní a noční směna těsně za sebou, vyloučení), mají skóre 0 a zaměstnanec se nevybere vůbec. Zaměstnanci příliš nad očekávaným počtem směn se přeskočí, pokud je k dispozici někdo jiný. Zaměstnanec, který kompenzuje, nemá mimo vzorec skóre vzorce, takže rozhodují ostatní pravidla.',
     patternTitle: 'Vzorec dlouhý/krátký týden',
     patternWeight: 'Váha vzorce',
     patternWeightHelp:
@@ -231,6 +248,23 @@ const en: Labels = {
       'The pattern weight should be greater than the sum of the other weights (fairness + day/night balance). Otherwise the generator can break the rotation of the pairs even without compensation.',
     weightsHint:
       'Weights are compared with each other: the criterion with the higher weight wins when criteria disagree. Equal weights mean equal influence. The ratio matters, not the numbers themselves. Default ratio: pattern 40, fairness 20, day/night 10.',
+    scoreTitle: 'How the score is calculated',
+    scoreIntro:
+      'For every shift and every employee all rules are evaluated. Each rule gives a score from 1 to 10 and its weight decides how much its score counts. The final score is a weighted average: the sum of (score × weight) divided by the sum of the weights. The employee with the highest score is chosen. So the rule with the highest weight does not simply win, and weights are not added up like votes.',
+    scoreExample:
+      'Example with the real weights from this configuration. Employee 1 is on the rotation, employee 2 is off it but strongly preferred by the fairness and day/night rules:',
+    scoreEmployee: 'Employee',
+    scoreRulePattern: 'Pattern',
+    scoreRuleFairness: 'Fairness',
+    scoreRuleKind: 'Day/night',
+    scoreOnPattern: '1: on the rotation',
+    scoreOffPattern: '2: off the rotation',
+    scoreColumn: '{name} (weight {weight})',
+    scoreFinal: 'Final score',
+    scoreWinner: 'Employee {n} is chosen.',
+    scoreTie: 'The scores are equal: whoever comes first by name is chosen.',
+    scoreNotes:
+      'In addition: an employee who breaks a hard limit (vacation, max in a row, day and night back to back, exclusion) scores 0 and is not chosen at all. Employees too far above their expected number of shifts are skipped while someone else is available. An employee who is compensating has no pattern score off the rotation, so the other rules decide.',
     patternTitle: 'Long/short week pattern',
     patternWeight: 'Pattern weight',
     patternWeightHelp:
