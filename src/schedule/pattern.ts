@@ -46,30 +46,69 @@ function mutualPartner(e: Employee, byId: Map<string, Employee>): Employee | und
   return partner && partner.id !== e.id && partner.partnerId === e.id ? partner : undefined;
 }
 
+/** A kept shift of the schedule: who works it. Used to line the rotation up with what is already locked. */
+export interface PatternEvidence {
+  shift: Shift;
+  employeeIds: readonly string[];
+}
+
 /**
  * Positions come from sorting the pairs by their first member (last name, first name, id); unpaired
  * employees follow the pairs. Deterministic and independent of the order of the input.
+ *
+ * With `evidence` (shifts that stay as they are, e.g. locked ones) the rotation continues from them: each
+ * pair takes the position whose shifts match its evidence best, and only pairs without any evidence fall
+ * back to the name order on the positions that are left.
  */
-export function buildPattern(employees: Employee[], anchor: string): PatternModel {
+export function buildPattern(employees: Employee[], anchor: string, evidence: readonly PatternEvidence[] = []): PatternModel {
   const sorted = [...employees].sort(compareEmployees);
   const byId = new Map(sorted.map((e) => [e.id, e]));
-  const positions = new Map<string, number>();
-  const singles: Employee[] = [];
-  let next = 0;
+  const units: string[][] = []; // pairs first (by first member), then single employees
+  const singles: string[][] = [];
+  const seen = new Set<string>();
   for (const e of sorted) {
-    if (positions.has(e.id)) continue;
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
     const partner = mutualPartner(e, byId);
     if (partner) {
-      positions.set(e.id, next);
-      positions.set(partner.id, next);
-      next++;
+      seen.add(partner.id);
+      units.push([e.id, partner.id]);
     } else {
-      singles.push(e);
+      singles.push([e.id]);
     }
   }
   // Without any pair there is no rotation to follow: the pattern abstains.
-  if (next === 0) return { anchor, positions: new Map() };
-  for (const e of singles) positions.set(e.id, next++);
+  if (units.length === 0) return { anchor, positions: new Map() };
+  units.push(...singles);
+
+  // votes[u][p]: evidence shifts worked by unit u that pattern position p also works.
+  const votes = units.map(() => [0, 0, 0, 0]);
+  const unitOf = new Map<string, number>();
+  units.forEach((ids, u) => ids.forEach((id) => unitOf.set(id, u)));
+  for (const { shift, employeeIds } of evidence) {
+    const touched = new Set(employeeIds.flatMap((id) => unitOf.get(id) ?? []));
+    for (const u of touched) {
+      for (let p = 0; p < 4; p++) if (patternWorks(p, shift, anchor)) (votes[u] as number[])[p]! += 1;
+    }
+  }
+
+  const unitPosition: (number | undefined)[] = units.map(() => undefined);
+  const taken = new Set<number>();
+  const options = units.flatMap((_, u) => [0, 1, 2, 3].map((p) => ({ u, p, v: (votes[u] as number[])[p] as number })));
+  options.sort((a, b) => b.v - a.v || a.u - b.u || a.p - b.p);
+  for (const { u, p, v } of options) {
+    if (v > 0 && unitPosition[u] === undefined && !taken.has(p)) {
+      unitPosition[u] = p;
+      taken.add(p);
+    }
+  }
+  // Units without evidence take the positions that are left in name order, then carry on counting.
+  const free = [0, 1, 2, 3].filter((p) => !taken.has(p));
+  const positions = new Map<string, number>();
+  units.forEach((ids, u) => {
+    const position = unitPosition[u] ?? free.shift() ?? u;
+    for (const id of ids) positions.set(id, position);
+  });
   return { anchor, positions };
 }
 

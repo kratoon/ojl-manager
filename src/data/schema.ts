@@ -80,6 +80,11 @@ export const patternSettingsSchema = z.object({
   anchor: mondaySchema.default('2026-11-02'),
   /** Weight of the pattern preference in the score. */
   weight: z.number().positive().default(4),
+  /**
+   * Compensation breaks the rotation: an employee at least this many shifts behind (after PTO) is not held
+   * to the pattern until the gap is closed, then the rotation takes over again.
+   */
+  compensationGap: z.number().positive().default(4),
 });
 
 export const companySchema = z.object({
