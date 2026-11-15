@@ -1256,3 +1256,9 @@ a[href] {
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
+
+.conflict__locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}

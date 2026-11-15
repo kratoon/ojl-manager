@@ -1,7 +1,7 @@
 import { TEMPORARY_ID, type Assignment, type Data, type Employee, type Vacation } from '../data/schema';
 import { buildPattern, type PatternEvidence } from './pattern';
 import { byString, compareEmployees } from './order';
-import { companyClosedReason, defaultRules, evaluate, type ReasonCode, type Rule } from './rules';
+import { brokenRules, companyClosedReason, defaultRules, evaluate, type ReasonCode, type Rule } from './rules';
 import { compareShifts, shiftKey, shiftsBetween, toIsoDate, type Shift, type ShiftKey } from './shift';
 
 export { compareEmployees };
@@ -16,6 +16,11 @@ export interface GenerateInput {
   /** First shift to (re)generate. Earlier shifts and all manual assignments are kept. */
   startAt: Shift;
   rules?: Rule[];
+  /**
+   * Also regenerate locked assignments that break a rule (for example a vacation added later), from the start
+   * on: the employee is dropped and the seat is filled again. Without it locked assignments are never touched.
+   */
+  replaceConflicting?: boolean;
 }
 
 export interface Unfilled {
@@ -64,7 +69,7 @@ function patternEvidence(kept: Map<ShiftKey, Assignment[]>, startAt: Shift): Pat
   return evidence;
 }
 
-export function generate({ data, range, startAt, rules = defaultRules }: GenerateInput): GenerateResult {
+export function generate({ data, range, startAt, rules = defaultRules, replaceConflicting = false }: GenerateInput): GenerateResult {
   const seats = data.company.seatsPerShift;
   const orderedRules = [...rules].sort((a, b) => byString(a.id, b.id));
   const employees = [...data.employees].sort(compareEmployees);
@@ -89,7 +94,9 @@ export function generate({ data, range, startAt, rules = defaultRules }: Generat
     const [date, part] = key.split(':') as [string, Shift['part']];
     const shift = { date, part };
     const regenerated = compareShifts(shift, startAt) >= 0 && compareShifts(shift, range.from) >= 0 && compareShifts(shift, range.to) <= 0;
-    const entries = regenerated ? list.filter((a) => a.source === 'manual') : [...list];
+    const entries = regenerated
+      ? list.filter((a) => a.source === 'manual' && !(replaceConflicting && brokenRules(data, shift, a.employeeId, orderedRules).length > 0))
+      : [...list];
     if (entries.length > 0) kept.set(key, entries);
   }
 
