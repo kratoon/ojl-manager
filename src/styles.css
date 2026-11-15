@@ -449,6 +449,34 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
+.seat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.seat-row .field {
+  flex: 1;
+}
+
+.seat-row .button--glyph {
+  align-self: flex-end;
+  aspect-ratio: auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
+.button--glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  align-self: stretch;
+  aspect-ratio: 1;
+  padding: 0 0.75rem;
+}
+
 .month__title {
   margin: 0;
   color: var(--blue);

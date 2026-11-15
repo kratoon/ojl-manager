@@ -76,7 +76,7 @@ const cs = {
     usePair: 'Použít pár',
     lockHint: 'Ruční přiřazení je zamčené: automatické plánování ho nikdy nepřepíše.',
     selectEmployee: '— vyberte —',
-    noEmployee: '— nikdo —',
+    noEmployee: '— nepřiřazeno —',
     unlockShift: 'Odemknout',
     clearShift: 'Vyprázdnit směnu',
     lockMonth: 'Zamknout celý měsíc',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clearShift, isMonthLocked, setMonthLock, unlockShift, type Assignments } from '../src/schedule/locks';
+import { clearShift, isMonthLocked, setMonthLock, type Assignments } from '../src/schedule/locks';
 
 const base = (): Assignments => ({
   '2026-11-30:night': [{ employeeId: 'a', source: 'auto' }],
@@ -29,15 +29,7 @@ describe('month lock', () => {
   });
 });
 
-describe('single shift', () => {
-  it('unlocks but keeps the employees', () => {
-    const locked = setMonthLock(base(), '2026-12', true);
-    expect(unlockShift(locked, '2026-12-01:day')['2026-12-01:day']).toEqual([
-      { employeeId: 'a', source: 'auto' },
-      { employeeId: 'b', source: 'auto' },
-    ]);
-  });
-
+describe('clear shift', () => {
   it('clears everybody, locked or not', () => {
     const next = clearShift(base(), '2026-12-01:day');
     expect('2026-12-01:day' in next).toBe(false);
