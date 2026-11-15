@@ -188,22 +188,13 @@ export async function buildCalendarPdf(input: CalendarPdfInput, fonts: FontBytes
 
           // Names, one line per seat
           const nameX = x + 15;
-          const maxW = colW - 15 - 14;
+          const maxW = colW - 15 - 3;
           const lineH = fontSize + 1.5;
           const names = list.map((a) => ({ a, employee: employees.get(a.employeeId) }));
           names.forEach(({ a, employee }, line) => {
             const label = fit(bold, employee?.name ?? '', fontSize, maxW);
             const baseline = bTop + 8 + line * lineH;
             text(bold, label, nameX, baseline, fontSize, cell.outside ? colors.faint : colors.ink);
-            if (a.source === 'manual' && !cell.outside) {
-              // tiny padlock after the name
-              const lx = nameX + width(bold, label, fontSize) + 3;
-              const ly = H - baseline;
-              page.drawRectangle({ x: lx, y: ly, width: 4.2, height: 3.2, color: color(colors.navy) });
-              page.drawLine({ start: { x: lx + 0.8, y: ly + 3.2 }, end: { x: lx + 0.8, y: ly + 4.6 }, thickness: 0.6, color: color(colors.navy) });
-              page.drawLine({ start: { x: lx + 3.4, y: ly + 3.2 }, end: { x: lx + 3.4, y: ly + 4.6 }, thickness: 0.6, color: color(colors.navy) });
-              page.drawLine({ start: { x: lx + 0.8, y: ly + 4.6 }, end: { x: lx + 3.4, y: ly + 4.6 }, thickness: 0.6, color: color(colors.navy) });
-            }
             if (!cell.outside) {
               const c = (counts[a.employeeId] ??= { day: 0, night: 0 });
               c[part]++;
