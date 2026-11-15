@@ -23,13 +23,6 @@ export function isMonthLocked(assignments: Assignments, monthPrefix: string): bo
   return entries.length > 0 && entries.every((a) => a.source === 'manual');
 }
 
-/** Unlock one shift but keep its employees: the generator may replace them again. */
-export function unlockShift(assignments: Assignments, key: ShiftKey): Assignments {
-  const list = assignments[key];
-  if (!list) return assignments;
-  return { ...assignments, [key]: list.map((a) => ({ ...a, source: 'auto' as const })) };
-}
-
 /** Remove everybody from one shift, locked or not. */
 export function clearShift(assignments: Assignments, key: ShiftKey): Assignments {
   return Object.fromEntries(Object.entries(assignments).filter(([k]) => k !== key));
