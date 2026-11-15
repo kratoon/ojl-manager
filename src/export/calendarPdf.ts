@@ -200,10 +200,10 @@ export async function buildCalendarPdf(input: CalendarPdfInput, fonts: FontBytes
               c[part]++;
             }
           });
-          if (!cell.outside) {
+          // Unassigned seats stay blank on paper; only a closed company is labelled.
+          if (!cell.outside && closed) {
             for (let s = list.length; s < seats; s++) {
-              const label = closed ? labels.calendar.closed : labels.calendar.empty;
-              text(regular, label, nameX, bTop + 8 + s * lineH, fontSize - 0.5, closed ? colors.muted : colors.danger);
+              text(regular, labels.calendar.closed, nameX, bTop + 8 + s * lineH, fontSize - 0.5, colors.muted);
             }
           }
         });
