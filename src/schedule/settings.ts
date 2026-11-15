@@ -1,5 +1,3 @@
-import { isoDatePattern } from './shift';
-
 // Generator settings that tune the schedule rather than describe the company (ADR-aaa3ccd, ADR-a1cb97d,
 // ADR-c2f8933). One place for the allowed range of every number, used by the settings dialog.
 
@@ -21,7 +19,7 @@ export const settingRanges = {
 
 export type NumberSetting = keyof typeof settingRanges;
 
-export type SettingError = 'required' | 'range' | 'monday';
+export type SettingError = 'required' | 'range';
 
 /** Checks the text of a number field: filled, a number, and inside the allowed range. */
 export function validateNumber(raw: string, range: NumberRange): SettingError | null {
@@ -29,13 +27,4 @@ export function validateNumber(raw: string, range: NumberRange): SettingError | 
   const value = Number(raw);
   if (!Number.isFinite(value)) return 'required';
   return value < range.min || value > range.max ? 'range' : null;
-}
-
-/** The start of the rotation must be a real date and a Monday. */
-export function validateMonday(date: string): SettingError | null {
-  if (!isoDatePattern.test(date)) return 'required';
-  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-  const day = new Date(y, m - 1, d);
-  if (Number.isNaN(day.getTime()) || day.getMonth() !== m - 1) return 'required';
-  return day.getDay() === 1 ? null : 'monday';
 }

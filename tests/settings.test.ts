@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { companySchema } from '../src/data/schema';
-import { settingRanges, validateMonday, validateNumber } from '../src/schedule/settings';
+import { settingRanges, validateNumber } from '../src/schedule/settings';
 
 describe('validateNumber', () => {
   const r = settingRanges.fairnessWeight; // 0.5 to 10
@@ -39,14 +39,5 @@ describe('validateNumber', () => {
       expect(range.fallback).toBeGreaterThanOrEqual(range.min);
       expect(range.fallback).toBeLessThanOrEqual(range.max);
     }
-  });
-});
-
-describe('validateMonday', () => {
-  it('accepts a Monday', () => expect(validateMonday('2026-11-02')).toBeNull());
-  it('rejects other weekdays', () => expect(validateMonday('2026-11-03')).toBe('monday'));
-  it('rejects empty or impossible dates', () => {
-    expect(validateMonday('')).toBe('required');
-    expect(validateMonday('2026-02-31')).toBe('required');
   });
 });
