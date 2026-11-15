@@ -77,7 +77,7 @@ const cs = {
     lockHint: 'Ruční přiřazení je zamčené: automatické plánování ho nikdy nepřepíše.',
     selectEmployee: '— vyberte —',
     noEmployee: '— nikdo —',
-    unlockShift: 'Odemknout (ponechat zaměstnance)',
+    unlockShift: 'Odemknout',
     clearShift: 'Vyprázdnit směnu',
     lockMonth: 'Zamknout celý měsíc',
     unlockMonth: 'Odemknout celý měsíc',
