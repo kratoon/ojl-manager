@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/kratoon/ojl-manager/compare/ojl-manager-v0.2.0...ojl-manager-v0.2.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* header menu button on the left, app version in the footer ([#26](https://github.com/kratoon/ojl-manager/issues/26)) ([dfc53e7](https://github.com/kratoon/ojl-manager/commit/dfc53e73e016211751003944b806f5dce232046c))
+
 ## [0.2.0](https://github.com/kratoon/ojl-manager/compare/ojl-manager-v0.1.0...ojl-manager-v0.2.0) (2026-11-21)
 
 
