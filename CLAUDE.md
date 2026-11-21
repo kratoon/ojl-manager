@@ -10,5 +10,6 @@
 ## Commits, PRs and releases (ADR-ca37db3)
 
 - PR titles (and so squash-merge commits) must follow [Conventional Commits](https://www.conventionalcommits.org): `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:`, `build:`, `ci:`, `chore:`, `revert:`; add `!` for breaking changes. CI rejects other titles.
+- If the work has a Gitboard issue, put its ref in the title as the scope: `feat(OJL-30c1ea6): open and save data file`. The issue is optional: without one, use `feat: ...` or a normal scope. Not every change has a ticket, so never invent one.
 - `feat` bumps the minor version, `fix`/`perf` the patch. Commits pushed straight to `main` for `.gitboard/` changes use `chore:`.
 - Never bump `package.json` `version` or edit `CHANGELOG.md` by hand: release-please does it through its release PR. The version is shown in the UI and written into saved data files.
