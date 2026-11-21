@@ -216,6 +216,13 @@ const cs = {
     saveError: 'Volno se nepodařilo uložit. Zkontrolujte, že „Do“ není před „Od“.',
     hint: 'Volno zahrnuje dovolenou i nemoc. Při zapnuté kompenzaci se zameškané směny dorovnají kolem volna.',
   },
+  file: {
+    menu: 'Soubor',
+    open: 'Otevřít soubor…',
+    save: 'Uložit do souboru',
+    openError: 'Soubor se nepodařilo načíst. Zvolte platný soubor s daty (JSON).',
+    confirmReplace: 'Neuložené změny budou ztraceny. Opravdu otevřít jiný soubor?',
+  },
   common: {
     loading: 'Načítání…',
     save: 'Uložit',
@@ -446,6 +453,13 @@ const en: Labels = {
     deleteConfirm: 'Do you really want to delete this time off?',
     saveError: 'Could not save the time off. Check that "To" is not before "From".',
     hint: 'Time off covers vacation and sick days. With compensation on, the missed shifts are made up around it.',
+  },
+  file: {
+    menu: 'File',
+    open: 'Open file…',
+    save: 'Save to file',
+    openError: 'The file could not be loaded. Choose a valid data file (JSON).',
+    confirmReplace: 'Unsaved changes will be lost. Open another file anyway?',
   },
   common: {
     loading: 'Loading…',

@@ -56,7 +56,6 @@ h1 {
 }
 
 .header__version {
-  margin-right: auto;
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
 }
@@ -93,6 +92,7 @@ h1 {
 
 .icon-button:focus-visible,
 .menu a:focus-visible,
+.menu button:focus-visible,
 .button:focus-visible,
 .form input:focus-visible {
   outline: 2px solid var(--blue-mid);
@@ -118,14 +118,25 @@ h1 {
   box-shadow: 0 8px 24px rgb(0 0 100 / 0.15);
 }
 
-.menu a {
+.menu a,
+.menu button {
   display: block;
   padding: 0.75rem 1rem;
   color: var(--ink);
   text-decoration: none;
 }
 
-.menu a:hover {
+.menu button {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.menu a:hover,
+.menu button:hover {
   background: var(--bg);
   color: var(--blue);
 }
@@ -1287,4 +1298,27 @@ a[href] {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+/* ---------- file menu ---------- */
+.file-menu {
+  position: relative;
+}
+
+.file-menu__error {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--danger);
+}
+
+.drop-hint {
+  outline: 3px dashed var(--yellow);
+  outline-offset: -3px;
 }
