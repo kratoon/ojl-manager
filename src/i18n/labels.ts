@@ -227,9 +227,6 @@ const cs = {
     close: 'Zavřít',
     noAccess: 'Nemáte oprávnění zobrazit tuto stránku.',
   },
-  home: {
-    welcome: 'Vítejte v aplikaci OJL Manager.',
-  },
 };
 
 export type Labels = typeof cs;
@@ -459,9 +456,6 @@ const en: Labels = {
     remove: 'Remove',
     close: 'Close',
     noAccess: 'You do not have permission to view this page.',
-  },
-  home: {
-    welcome: 'Welcome to OJL Manager.',
   },
 };
 
