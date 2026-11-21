@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useData } from '../data/DataProvider';
+import type { FileWarning } from '../data/dataFile';
 import { useT } from '../i18n/I18nProvider';
 import { usePermissions } from '../permissions/PermissionsProvider';
 import { useDismiss } from './useDismiss';
@@ -20,6 +21,7 @@ export function FileMenu() {
   const { state, dirty, openFile, downloadFile } = useData();
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [warnings, setWarnings] = useState<FileWarning[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
@@ -33,10 +35,11 @@ export function FileMenu() {
     async (file: File) => {
       if (dirty && !window.confirm(t.file.confirmReplace)) return;
       try {
-        await openFile(file);
+        setWarnings(await openFile(file));
         setFailed(false);
       } catch {
         setFailed(true);
+        setWarnings([]);
       }
     },
     [dirty, openFile, t],
@@ -118,6 +121,16 @@ export function FileMenu() {
             </li>
           )}
         </ul>
+      )}
+      {warnings.length > 0 && (
+        <div role="status" className="file-menu__error file-menu__warning">
+          {warnings.map((w) => (
+            <p key={w.kind}>{w.kind === 'newerVersion' ? t.file.newerVersion.replace('{version}', w.version) : t.file.olderFile}</p>
+          ))}
+          <button type="button" className="button" onClick={() => setWarnings([])}>
+            {t.common.close}
+          </button>
+        </div>
       )}
       {failed && (
         <p role="alert" className="file-menu__error error">
