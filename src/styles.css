@@ -1318,6 +1318,14 @@ a[href] {
   border: 1px solid var(--danger);
 }
 
+.file-menu__warning {
+  border-color: var(--yellow);
+}
+
+.file-menu__warning p {
+  margin: 0 0 0.5rem;
+}
+
 .drop-hint {
   outline: 3px dashed var(--yellow);
   outline-offset: -3px;

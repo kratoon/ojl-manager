@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LocalApiDataStore, MemoryDataStore, type DataStore } from './DataStore';
-import { dataFileName, parseDataFile, serializeData } from './dataFile';
+import { dataFileName, fileWarnings, parseDataFile, serializeData, type FileWarning } from './dataFile';
+import { APP_VERSION } from '../version';
 import type { Data } from './schema';
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Data };
@@ -10,8 +11,11 @@ interface DataContextValue {
   save(next: Data): Promise<void>;
   /** True when there are changes that exist only in memory (not downloaded yet). */
   dirty: boolean;
-  /** Replaces the data with the content of a file picked from the user's PC. Throws on an invalid file. */
-  openFile(file: File): Promise<void>;
+  /**
+   * Replaces the data with the content of a file picked from the user's PC. Throws on an invalid file.
+   * Resolves with warnings (newer app version, older than the loaded data); the file is opened anyway.
+   */
+  openFile(file: File): Promise<FileWarning[]>;
   /** Downloads the current data as `rozvrh-smen-<date>.json`. */
   downloadFile(): void;
 }
@@ -27,6 +31,8 @@ export function DataProvider({ store, children }: { store?: DataStore; children:
   const activeStore = useMemo(() => store ?? defaultStore(), [store]);
   const [state, setState] = useState<State>({ status: 'loading' });
   const [dirty, setDirty] = useState(false);
+  // `updatedAt` of the file the current data came from or was last saved to.
+  const [fileUpdatedAt, setFileUpdatedAt] = useState<string>();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,22 +56,30 @@ export function DataProvider({ store, children }: { store?: DataStore; children:
 
   const openFile = useCallback(
     async (file: File) => {
-      const data = parseDataFile(await file.text());
+      const { data, meta } = parseDataFile(await file.text());
+      const warnings = fileWarnings(meta, APP_VERSION, fileUpdatedAt);
       await activeStore.save(data);
       setState({ status: 'ready', data });
+      setFileUpdatedAt(meta.updatedAt);
       setDirty(false);
+      return warnings;
     },
-    [activeStore],
+    [activeStore, fileUpdatedAt],
   );
 
   const downloadFile = useCallback(() => {
     if (state.status !== 'ready') return;
-    const url = URL.createObjectURL(new Blob([serializeData(state.data)], { type: 'application/json' }));
+    const now = new Date();
+    const updatedAt = now.toISOString();
+    const url = URL.createObjectURL(
+      new Blob([serializeData(state.data, { updatedAt, version: APP_VERSION })], { type: 'application/json' }),
+    );
     const link = document.createElement('a');
     link.href = url;
-    link.download = dataFileName(new Date());
+    link.download = dataFileName(now);
     link.click();
     URL.revokeObjectURL(url);
+    setFileUpdatedAt(updatedAt);
     setDirty(false);
   }, [state]);
 

@@ -222,6 +222,8 @@ const cs = {
     save: 'Uložit do souboru',
     openError: 'Soubor se nepodařilo načíst. Zvolte platný soubor s daty (JSON).',
     confirmReplace: 'Neuložené změny budou ztraceny. Opravdu otevřít jiný soubor?',
+    newerVersion: 'Soubor vytvořila novější verze aplikace ({version}). Některé údaje se nemusí zobrazit správně.',
+    olderFile: 'Otevřený soubor je starší než data, která byla načtena předtím.',
   },
   common: {
     loading: 'Načítání…',
@@ -460,6 +462,8 @@ const en: Labels = {
     save: 'Save to file',
     openError: 'The file could not be loaded. Choose a valid data file (JSON).',
     confirmReplace: 'Unsaved changes will be lost. Open another file anyway?',
+    newerVersion: 'The file was written by a newer app version ({version}). Some data may not display correctly.',
+    olderFile: 'The opened file is older than the data loaded before.',
   },
   common: {
     loading: 'Loading…',
