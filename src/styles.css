@@ -55,6 +55,12 @@ h1 {
   white-space: nowrap;
 }
 
+.header__version {
+  margin-right: auto;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
 .content {
   max-width: 72rem;
   margin: 0 auto;

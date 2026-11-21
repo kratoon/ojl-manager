@@ -5,6 +5,7 @@ const cs = {
   app: {
     title: 'OJL Manager',
     shortTitle: 'OJL',
+    version: 'Verze aplikace',
   },
   nav: {
     setup: 'Nastavení',
@@ -235,6 +236,7 @@ const en: Labels = {
   app: {
     title: 'OJL Manager',
     shortTitle: 'OJL',
+    version: 'App version',
   },
   nav: {
     setup: 'Setup',
