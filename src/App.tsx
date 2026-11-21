@@ -8,6 +8,7 @@ import { EmployeesPage } from './pages/EmployeesPage';
 import { TimeOffPage } from './pages/TimeOffPage';
 import { usePermissions } from './permissions/PermissionsProvider';
 import { routePermissions, useRoute } from './router';
+import { APP_VERSION } from './version';
 
 export function App() {
   const t = useT();
@@ -32,6 +33,7 @@ export function App() {
     <>
       <Header />
       <main className="content">{page}</main>
+      <footer className="footer">{`${t.app.version} ${APP_VERSION}`}</footer>
     </>
   );
 }
