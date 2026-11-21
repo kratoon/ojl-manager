@@ -46,6 +46,7 @@ h1 {
 }
 
 .header__title {
+  margin-right: auto;
   color: #fff;
   font-size: 1.125rem;
   font-weight: 600;
@@ -55,9 +56,11 @@ h1 {
   white-space: nowrap;
 }
 
-.header__version {
-  color: rgba(255, 255, 255, 0.6);
+.footer {
+  padding: 1rem;
+  color: var(--muted);
   font-size: 0.75rem;
+  text-align: center;
 }
 
 .content {
@@ -429,7 +432,7 @@ h1 {
 
 /* ---------- navigation ---------- */
 .nav {
-  margin-left: auto;
+  order: -1;
 }
 
 .nav__list {
@@ -592,7 +595,12 @@ h1 {
 }
 
 @media (min-width: 40rem) {
+  .header__title {
+    margin-right: 0;
+  }
+
   .nav {
+    order: 0;
     margin: 0 auto 0 1.5rem;
   }
 
