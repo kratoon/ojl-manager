@@ -1,7 +1,10 @@
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { App } from '../src/App';
+import { DataProvider } from '../src/data/DataProvider';
+import { MemoryDataStore } from '../src/data/DataStore';
 import { I18nProvider } from '../src/i18n/I18nProvider';
+import { PermissionsProvider } from '../src/permissions/PermissionsProvider';
 import { defaultLocale, labels } from '../src/i18n/labels';
 
 function keys(obj: object, prefix = ''): string[] {
@@ -36,10 +39,15 @@ describe('App', () => {
   it('renders the header with the setup button in Czech by default', () => {
     const html = renderToString(
       <I18nProvider>
-        <App />
+        <PermissionsProvider>
+          <DataProvider store={new MemoryDataStore()}>
+            <App />
+          </DataProvider>
+        </PermissionsProvider>
       </I18nProvider>,
     );
     expect(html).toContain('OJL Manager');
     expect(html).toContain('aria-label="Nastavení"');
+    expect(html).toContain('aria-label="Soubor"');
   });
 });

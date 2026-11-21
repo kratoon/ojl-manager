@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { can, features, modeFor } from '../src/permissions/permissions';
+import { can, defaultMode, features } from '../src/permissions/permissions';
 import { parseHash, routePermissions, type RouteName } from '../src/router';
 
-describe('modeFor', () => {
-  it.each(['localhost', '127.0.0.1', '[::1]', 'app.localhost'])('%s is edit', (host) => {
-    expect(modeFor(host)).toBe('edit');
-  });
-
-  it.each(['example.github.io', 'localhost.evil.com', ''])('%s is view', (host) => {
-    expect(modeFor(host)).toBe('view');
+describe('defaultMode', () => {
+  it('is edit on every host (data is a local file, ADR-112163d)', () => {
+    expect(defaultMode()).toBe('edit');
   });
 });
 
